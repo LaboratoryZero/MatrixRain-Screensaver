@@ -34,6 +34,9 @@ final class MatrixRainView: ScreenSaverView {
     private var cachedAlphaColors: [CGColor] = []  // Pre-computed alpha variants
     private var primaryCGColor: CGColor!
     private var backgroundCGColor: CGColor!
+    private var cachedHaloGradient: CGGradient?    // Cached halo gradient
+    private var cachedHaloRadius: CGFloat = 0      // Cached halo radius
+    private var cachedGlyphs: [UniChar: CGGlyph] = [:]  // Cached glyph lookups
 
     override var isFlipped: Bool { true }
 
@@ -115,9 +118,21 @@ final class MatrixRainView: ScreenSaverView {
         // Use Hiragino Kaku Gothic for katakana support
         ctFont = CTFontCreateWithName("Hiragino Kaku Gothic ProN" as CFString, glyphSize, nil)
         
+        // Pre-cache all glyph lookups
+        cachedGlyphs.removeAll()
+        for char in glyphChars {
+            var uniChar = char
+            var cgGlyph: CGGlyph = 0
+            CTFontGetGlyphsForCharacters(ctFont, &uniChar, &cgGlyph, 1)
+            cachedGlyphs[char] = cgGlyph
+        }
+        
         // Cache CGColors - head brightness only affects the lead character
         primaryCGColor = primaryColor.withAlphaComponent(headBrightness).cgColor
         backgroundCGColor = backgroundColor.cgColor
+        
+        // Cache halo gradient and radius
+        rebuildHaloCache()
         
         // Pre-compute color variants for the tail with color transition
         // colorTransition controls how quickly we blend from primary to secondary color
@@ -149,6 +164,41 @@ final class MatrixRainView: ScreenSaverView {
             let color = NSColor(calibratedRed: r, green: g, blue: b, alpha: alpha).cgColor
             cachedAlphaColors.append(color)
         }
+        
+        // Cache halo gradient and radius
+        rebuildHaloCache()
+    }
+
+    private func rebuildHaloCache() {
+        // Halo intensity scales with headBrightness (baseline)
+        let brightnessIntensity = (headBrightness - 0.5) / 1.5  // 0.0 at 0.5, 1.0 at 2.0
+        let glowIntensity = headGlow
+        
+        // Cache the radius
+        cachedHaloRadius = glyphSize * (1.0 + brightnessIntensity * 0.5 + glowIntensity * 0.5)
+        
+        // Get primary color components
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        primaryColor.usingColorSpace(.deviceRGB)?.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        // Blend toward white based on headGlow
+        let glowRed = red + (1.0 - red) * glowIntensity
+        let glowGreen = green + (1.0 - green) * glowIntensity
+        let glowBlue = blue + (1.0 - blue) * glowIntensity
+        
+        // Alpha increases with both brightness and glow
+        let baseAlpha = min(0.6, brightnessIntensity * 0.6)
+        let glowAlpha = min(0.8, baseAlpha + glowIntensity * 0.4)
+        
+        let colors: [CGFloat] = [
+            glowRed, glowGreen, glowBlue, glowAlpha,
+            glowRed, glowGreen, glowBlue, glowAlpha * 0.3,
+            glowRed, glowGreen, glowBlue, 0.0
+        ]
+        let locations: [CGFloat] = [0.0, 0.5, 1.0]
+        
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        cachedHaloGradient = CGGradient(colorSpace: colorSpace, colorComponents: colors, locations: locations, count: 3)
     }
 
     private func reloadSettingsIfNeeded() {
@@ -182,8 +232,21 @@ final class MatrixRainView: ScreenSaverView {
             columnDensity = newDensity
             
             ctFont = CTFontCreateWithName("Hiragino Kaku Gothic ProN" as CFString, glyphSize, nil)
+            
+            // Rebuild glyph cache when font changes
+            cachedGlyphs.removeAll()
+            for char in glyphChars {
+                var uniChar = char
+                var cgGlyph: CGGlyph = 0
+                CTFontGetGlyphsForCharacters(ctFont, &uniChar, &cgGlyph, 1)
+                cachedGlyphs[char] = cgGlyph
+            }
+            
             primaryCGColor = primaryColor.withAlphaComponent(headBrightness).cgColor
             backgroundCGColor = backgroundColor.cgColor
+            
+            // Rebuild halo cache
+            rebuildHaloCache()
             
             // Pre-compute color variants for the tail with color transition
             cachedAlphaColors.removeAll()
@@ -358,9 +421,8 @@ final class MatrixRainView: ScreenSaverView {
             }
             
             // Draw glyph using Core Text with transform to flip text right-side up
-            var glyph = column.glyphs[step]
-            var cgGlyph: CGGlyph = 0
-            CTFontGetGlyphsForCharacters(ctFont, &glyph, &cgGlyph, 1)
+            let glyph = column.glyphs[step]
+            let cgGlyph = cachedGlyphs[glyph] ?? 0
             
             context.saveGState()
             
@@ -370,50 +432,19 @@ final class MatrixRainView: ScreenSaverView {
             context.translateBy(x: -glyphSize / 2, y: -glyphSize / 2)
             
             context.setFillColor(color)
+            var glyphToDraw = cgGlyph
             var position = CGPoint(x: xOffset, y: glyphSize * 0.2)  // Baseline offset from bottom
-            CTFontDrawGlyphs(ctFont, &cgGlyph, &position, 1, context)
+            CTFontDrawGlyphs(ctFont, &glyphToDraw, &position, 1, context)
             
             context.restoreGState()
         }
     }
     
     private func drawHalo(at center: CGPoint, in context: CGContext) {
-        // Halo intensity scales with headBrightness (baseline)
-        let brightnessIntensity = (headBrightness - 0.5) / 1.5  // 0.0 at 0.5, 1.0 at 2.0
-        // headGlow pushes color toward white and increases overall glow
-        let glowIntensity = headGlow  // 0.0 to 1.0
-        
-        // Radius grows with both brightness and glow
-        let haloRadius = glyphSize * (1.0 + brightnessIntensity * 0.5 + glowIntensity * 0.5)
-        
-        // Create radial gradient for soft glow
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        
-        // Get primary color components for the glow
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-        primaryColor.usingColorSpace(.deviceRGB)?.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
-        // Blend toward white based on headGlow setting
-        // At glow=0: use primary color, at glow=1: fully white
-        let glowRed = red + (1.0 - red) * glowIntensity
-        let glowGreen = green + (1.0 - green) * glowIntensity
-        let glowBlue = blue + (1.0 - blue) * glowIntensity
-        
-        // Alpha increases with both brightness and glow
-        let baseAlpha = min(0.6, brightnessIntensity * 0.6)
-        let glowAlpha = min(0.8, baseAlpha + glowIntensity * 0.4)
-        
-        let colors: [CGFloat] = [
-            glowRed, glowGreen, glowBlue, glowAlpha,  // Center - brightest, pushed toward white
-            glowRed, glowGreen, glowBlue, glowAlpha * 0.3,  // Mid
-            glowRed, glowGreen, glowBlue, 0.0   // Edge - transparent
-        ]
-        let locations: [CGFloat] = [0.0, 0.5, 1.0]
-        
-        guard let gradient = CGGradient(colorSpace: colorSpace, colorComponents: colors, locations: locations, count: 3) else { return }
+        guard let gradient = cachedHaloGradient else { return }
         
         context.saveGState()
-        context.drawRadialGradient(gradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: haloRadius, options: [])
+        context.drawRadialGradient(gradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: cachedHaloRadius, options: [])
         context.restoreGState()
     }
 }
