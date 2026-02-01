@@ -1,0 +1,223 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000100000000 /* MatrixRainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000100000000 /* MatrixRainView.swift */; };
+		A10000000000000100000001 /* MatrixConfigSheetController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000100000001 /* MatrixConfigSheetController.swift */; };
+		A10000000000000100000002 /* MatrixSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000100000002 /* MatrixSettings.swift */; };
+		A10000000000000100000003 /* ScreenSaver.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1000000000000200000000 /* ScreenSaver.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1000000000000100000000 /* MatrixRainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainView.swift; sourceTree = "<group>"; };
+		A1000000000000100000001 /* MatrixConfigSheetController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixConfigSheetController.swift; sourceTree = "<group>"; };
+		A1000000000000100000002 /* MatrixSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixSettings.swift; sourceTree = "<group>"; };
+		A1000000000000100000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1000000000000200000000 /* ScreenSaver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenSaver.framework; path = System/Library/Frameworks/ScreenSaver.framework; sourceTree = SDKROOT; };
+		A1000000000000300000000 /* MatrixRain.saver */ = {isa = PBXFileReference; explicitFileType = wrapper.bundle; includeInIndex = 0; path = MatrixRain.saver; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1000000000000400000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000100000003 /* ScreenSaver.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1000000000000500000000 = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000500000001 /* MatrixRain */,
+				A1000000000000500000002 /* Frameworks */,
+				A1000000000000500000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1000000000000500000001 /* MatrixRain */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000100000000 /* MatrixRainView.swift */,
+				A1000000000000100000001 /* MatrixConfigSheetController.swift */,
+				A1000000000000100000002 /* MatrixSettings.swift */,
+				A1000000000000100000003 /* Info.plist */,
+			);
+			path = MatrixRain;
+			sourceTree = "<group>";
+		};
+		A1000000000000500000002 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000200000000 /* ScreenSaver.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A1000000000000500000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000300000000 /* MatrixRain.saver */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000000000000600000000 /* MatrixRain */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000000000000700000000 /* Build configuration list for PBXNativeTarget "MatrixRain" */;
+			buildPhases = (
+				A1000000000000800000000 /* Sources */,
+				A1000000000000400000000 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MatrixRain;
+			productName = MatrixRain;
+			productReference = A1000000000000300000000 /* MatrixRain.saver */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1000000000000900000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					A1000000000000600000000 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = A1000000000000700000001 /* Build configuration list for PBXProject "MatrixRain" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1000000000000500000000;
+			productRefGroup = A1000000000000500000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1000000000000600000000 /* MatrixRain */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1000000000000800000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000100000000 /* MatrixRainView.swift in Sources */,
+				A10000000000000100000001 /* MatrixConfigSheetController.swift in Sources */,
+				A10000000000000100000002 /* MatrixSettings.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1000000000000A00000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				INFOPLIST_FILE = MatrixRain/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matrixy.saver;
+				PRODUCT_NAME = MatrixRain;
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 5.0;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Debug;
+		};
+		A1000000000000A00000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				INFOPLIST_FILE = MatrixRain/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matrixy.saver;
+				PRODUCT_NAME = MatrixRain;
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 5.0;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Release;
+		};
+		A1000000000000A00000002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CODE_SIGNING_ALLOWED = NO;
+				DEVELOPMENT_TEAM = "";
+				OTHER_LDFLAGS = (
+					"-framework",
+					"ScreenSaver",
+				);
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A1000000000000A00000003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CODE_SIGNING_ALLOWED = NO;
+				DEVELOPMENT_TEAM = "";
+				OTHER_LDFLAGS = (
+					"-framework",
+					"ScreenSaver",
+				);
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1000000000000700000000 /* Build configuration list for PBXNativeTarget "MatrixRain" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000000000000A00000000 /* Debug */,
+				A1000000000000A00000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000000000000700000001 /* Build configuration list for PBXProject "MatrixRain" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000000000000A00000002 /* Debug */,
+				A1000000000000A00000003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1000000000000900000000 /* Project object */;
+}
