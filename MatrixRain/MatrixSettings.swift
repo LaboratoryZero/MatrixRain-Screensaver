@@ -22,6 +22,7 @@ enum MatrixSettings {
     static let headBrightnessKey = "headBrightness"
     static let headGlowKey = "headGlow"
     static let fadeLengthKey = "fadeLength"
+    static let colorTransitionKey = "colorTransition"
     static let columnDensityKey = "columnDensity"
 
     static let defaultGlyphSize: CGFloat = 18
@@ -32,6 +33,7 @@ enum MatrixSettings {
     static let defaultHeadBrightness: CGFloat = 1.0  // 0.5 to 2.0 (100% default, up to 200%)
     static let defaultHeadGlow: CGFloat = 0.5        // 0.0 to 1.0 (50% default, pushes toward white)
     static let defaultFadeLength: CGFloat = 1.0      // 0.5 to 2.0 (multiplier for tail fade)
+    static let defaultColorTransition: CGFloat = 0.3 // 0.0 to 1.0 (how far into tail before full tail color)
     static let defaultColumnDensity: CGFloat = 1.0  // 0.2 to 2.0 (100% default, >100% allows overlap)
     
     // MARK: - File I/O
@@ -174,6 +176,21 @@ enum MatrixSettings {
 
     static func setFadeLength(_ value: CGFloat) {
         cachedSettings[fadeLengthKey] = Double(value)
+        saveToDisk()
+    }
+
+    // MARK: - Color Transition
+
+    static func colorTransition() -> CGFloat {
+        refreshFromDisk()
+        if let value = cachedSettings[colorTransitionKey] as? Double {
+            return CGFloat(value)
+        }
+        return defaultColorTransition
+    }
+
+    static func setColorTransition(_ value: CGFloat) {
+        cachedSettings[colorTransitionKey] = Double(value)
         saveToDisk()
     }
 

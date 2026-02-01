@@ -22,6 +22,7 @@ final class MatrixRainView: ScreenSaverView {
     private var headBrightness: CGFloat = MatrixSettings.defaultHeadBrightness
     private var headGlow: CGFloat = MatrixSettings.defaultHeadGlow
     private var fadeLength: CGFloat = MatrixSettings.defaultFadeLength
+    private var colorTransition: CGFloat = MatrixSettings.defaultColorTransition
     private var columnDensity: CGFloat = MatrixSettings.defaultColumnDensity
     private var glyphChars: [UniChar] = []
     private var configController: MatrixConfigSheetController?
@@ -108,6 +109,7 @@ final class MatrixRainView: ScreenSaverView {
         headBrightness = MatrixSettings.headBrightness()
         headGlow = MatrixSettings.headGlow()
         fadeLength = MatrixSettings.fadeLength()
+        colorTransition = MatrixSettings.colorTransition()
         columnDensity = MatrixSettings.columnDensity()
         
         // Use Hiragino Kaku Gothic for katakana support
@@ -117,18 +119,34 @@ final class MatrixRainView: ScreenSaverView {
         primaryCGColor = primaryColor.withAlphaComponent(headBrightness).cgColor
         backgroundCGColor = backgroundColor.cgColor
         
-        // Pre-compute alpha color variants for the tail (NOT affected by headBrightness)
-        // fadeLength controls how far the brightness persists into the tail
-        // Higher fadeLength = slower fade = more of the tail stays bright
+        // Pre-compute color variants for the tail with color transition
+        // colorTransition controls how quickly we blend from primary to secondary color
         cachedAlphaColors.removeAll()
         let steps = 20
+        
+        // Get primary and secondary color components for blending
+        var pr: CGFloat = 0, pg: CGFloat = 0, pb: CGFloat = 0, pa: CGFloat = 0
+        var sr: CGFloat = 0, sg: CGFloat = 0, sb: CGFloat = 0, sa: CGFloat = 0
+        primaryColor.usingColorSpace(.deviceRGB)?.getRed(&pr, green: &pg, blue: &pb, alpha: &pa)
+        secondaryColor.usingColorSpace(.deviceRGB)?.getRed(&sr, green: &sg, blue: &sb, alpha: &sa)
+        
         for i in 0...steps {
             let fadeProgress = CGFloat(i) / CGFloat(steps)
             // Apply fadeLength as power curve - higher = longer fade (slower falloff)
             let adjustedProgress = pow(fadeProgress, 2.0 / fadeLength)
-            // Tail starts at full secondary color brightness (1.0), fades based on position
+            // Tail starts at full brightness (1.0), fades based on position
             let alpha = max(0.05, 1.0 - adjustedProgress)
-            let color = secondaryColor.withAlphaComponent(alpha).cgColor
+            
+            // Color transition: blend from primary to secondary
+            // colorTransition=0: instant switch to secondary
+            // colorTransition=1: gradual blend over entire tail
+            let transitionRange = max(0.01, colorTransition)  // Avoid division by zero
+            let colorBlend = min(1.0, fadeProgress / transitionRange)
+            let r = pr + (sr - pr) * colorBlend
+            let g = pg + (sg - pg) * colorBlend
+            let b = pb + (sb - pb) * colorBlend
+            
+            let color = NSColor(calibratedRed: r, green: g, blue: b, alpha: alpha).cgColor
             cachedAlphaColors.append(color)
         }
     }
@@ -142,13 +160,14 @@ final class MatrixRainView: ScreenSaverView {
         let newHeadBrightness = MatrixSettings.headBrightness()
         let newHeadGlow = MatrixSettings.headGlow()
         let newFadeLength = MatrixSettings.fadeLength()
+        let newColorTransition = MatrixSettings.colorTransition()
         let newDensity = MatrixSettings.columnDensity()
 
         let needsRebuild = newGlyphSize != glyphSize || newDensity != columnDensity
         let needsColorUpdate = newSpeed != fallSpeed ||
            newPrimary != primaryColor || newSecondary != secondaryColor ||
            newBackground != backgroundColor || newHeadBrightness != headBrightness ||
-           newHeadGlow != headGlow || newFadeLength != fadeLength
+           newHeadGlow != headGlow || newFadeLength != fadeLength || newColorTransition != colorTransition
 
         if needsRebuild || needsColorUpdate {
             glyphSize = newGlyphSize
@@ -159,20 +178,37 @@ final class MatrixRainView: ScreenSaverView {
             headBrightness = newHeadBrightness
             headGlow = newHeadGlow
             fadeLength = newFadeLength
+            colorTransition = newColorTransition
             columnDensity = newDensity
             
             ctFont = CTFontCreateWithName("Hiragino Kaku Gothic ProN" as CFString, glyphSize, nil)
             primaryCGColor = primaryColor.withAlphaComponent(headBrightness).cgColor
             backgroundCGColor = backgroundColor.cgColor
             
+            // Pre-compute color variants for the tail with color transition
             cachedAlphaColors.removeAll()
             let steps = 20
+            
+            // Get primary and secondary color components for blending
+            var pr: CGFloat = 0, pg: CGFloat = 0, pb: CGFloat = 0, pa: CGFloat = 0
+            var sr: CGFloat = 0, sg: CGFloat = 0, sb: CGFloat = 0, sa: CGFloat = 0
+            primaryColor.usingColorSpace(.deviceRGB)?.getRed(&pr, green: &pg, blue: &pb, alpha: &pa)
+            secondaryColor.usingColorSpace(.deviceRGB)?.getRed(&sr, green: &sg, blue: &sb, alpha: &sa)
+            
             for i in 0...steps {
                 let fadeProgress = CGFloat(i) / CGFloat(steps)
                 let adjustedProgress = pow(fadeProgress, 2.0 / fadeLength)
-                // Tail starts at full secondary color brightness, fades based on position
+                // Tail starts at full brightness, fades based on position
                 let alpha = max(0.05, 1.0 - adjustedProgress)
-                let color = secondaryColor.withAlphaComponent(alpha).cgColor
+                
+                // Color transition: blend from primary to secondary
+                let transitionRange = max(0.01, colorTransition)
+                let colorBlend = min(1.0, fadeProgress / transitionRange)
+                let r = pr + (sr - pr) * colorBlend
+                let g = pg + (sg - pg) * colorBlend
+                let b = pb + (sb - pb) * colorBlend
+                
+                let color = NSColor(calibratedRed: r, green: g, blue: b, alpha: alpha).cgColor
                 cachedAlphaColors.append(color)
             }
             

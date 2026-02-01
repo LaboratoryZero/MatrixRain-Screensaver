@@ -10,10 +10,12 @@ A macOS screensaver that renders the iconic Matrix-style falling code rain anima
 
 - **Authentic Matrix Effect**: Falling columns of Japanese katakana and numeric characters
 - **Smooth 60fps Animation**: Time-based rendering for consistent performance
-- **Customizable Colors**: Primary, secondary, and background color selection
+- **Customizable Colors**: Head, tail, and background color selection
 - **Head Glow Effect**: Adjustable brightness and white-hot glow for lead characters
 - **Fade Control**: Configure how quickly the tail fades behind each column
+- **Color Transition**: Control the blend gradient from head to tail color
 - **Column Density**: Sparse to overlapping column configurations (20% - 200%)
+- **Catppuccin Themes**: Built-in presets for all four Catppuccin flavors (Latte, Frappé, Macchiato, Mocha)
 - **Persistent Settings**: Preferences saved between sessions
 
 ## Installation
@@ -70,10 +72,22 @@ A macOS screensaver that renders the iconic Matrix-style falling code rain anima
 | **Head Brightness** | 50% - 200% | Brightness of the lead character in each column |
 | **Head Glow** | 0% - 100% | Intensity of the white-hot halo effect around the head |
 | **Fade Length** | 0.5x - 2.0x | How far the brightness persists into the tail |
+| **Color Transition** | 0% - 100% | How quickly colors blend from head to tail |
 | **Column Density** | 20% - 200% | Number of falling columns (>100% creates overlapping streams) |
-| **Primary Color** | Color picker | Color of the head/lead character |
-| **Secondary Color** | Color picker | Color of the trailing characters |
+| **Head Color** | Color picker | Color of the head/lead character |
+| **Tail Color** | Color picker | Color of the trailing characters |
 | **Background** | Color picker | Background color (default: black) |
+
+### Catppuccin Theme Presets
+
+One-click theme presets using the beautiful [Catppuccin](https://github.com/catppuccin/catppuccin) color palette:
+
+| Button | Flavor | Description |
+|--------|--------|-------------|
+| 🌻 | **Latte** | Light, warm flavor with cream background |
+| 🪴 | **Frappé** | Medium, cool flavor with blue-gray background |
+| 🌺 | **Macchiato** | Dark, rich flavor with deep purple background |
+| 🌿 | **Mocha** | Darkest flavor with signature purple head glow |
 
 ## Troubleshooting
 
@@ -110,3 +124,5 @@ MIT License - See [LICENSE](LICENSE) for details.
 Developed by Laboratory Zero, 2026.
 
 Inspired by the iconic "digital rain" effect from The Matrix (1999).
+
+Color themes use the [Catppuccin](https://github.com/catppuccin/catppuccin) palette, a community-driven pastel theme created by [Catppuccin](https://github.com/catppuccin). Catppuccin is released under the MIT License.

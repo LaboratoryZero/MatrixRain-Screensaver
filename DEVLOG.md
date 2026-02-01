@@ -72,6 +72,21 @@ A chronological record of the development process for the MatrixRain macOS scree
 - Glow blends primary color toward white
 - Default set to 50% for visible effect
 
+**Color Transition Control**
+- Renamed "Primary Color" to "Head Color" and "Secondary Color" to "Tail Color"
+- Added Color Transition slider (0% - 100%)
+- Controls the blend gradient from head to tail color
+- 0%: Instant switch to tail color
+- 100%: Gradual blend over entire tail length
+
+**Catppuccin Theme Presets**
+- Added 4 preset buttons for Catppuccin color palette flavors
+- Uses official emoji icons: 🌻 Latte, 🪴 Frappé, 🌺 Macchiato, 🌿 Mocha
+- Each button has a hover tooltip with flavor description
+- Themes use Crust (darkest) background for better text contrast
+- Mocha features signature Mauve purple as head color
+- Attribution to Catppuccin project (MIT License)
+
 ---
 
 ## Architecture
@@ -116,7 +131,8 @@ MatrixRain/
 | Head Brightness | headBrightness | 1.0 | 0.5-2.0 |
 | Head Glow | headGlow | 0.5 | 0.0-1.0 |
 | Fade Length | fadeLength | 1.0 | 0.5-2.0 |
+| Color Transition | colorTransition | 0.3 | 0.0-1.0 |
 | Column Density | columnDensity | 1.0 | 0.2-2.0 |
-| Primary Color | palettePrimary | Bright Green | - |
-| Secondary Color | paletteSecondary | Light Green | - |
+| Head Color | palettePrimary | Bright Green | - |
+| Tail Color | paletteSecondary | Light Green | - |
 | Background | backgroundColor | Black | - |
