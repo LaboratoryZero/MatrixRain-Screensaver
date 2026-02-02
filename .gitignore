@@ -42,3 +42,6 @@ fastlane/test_output
 
 # Code Injection
 iOSInjectionProject/
+
+# Distribution artifacts
+dist/
