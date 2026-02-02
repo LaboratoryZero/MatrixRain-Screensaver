@@ -7,6 +7,7 @@
 
 /* Begin PBXBuildFile section */
 		/* MatrixRainApp */
+		B10000000000000100000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000007 /* Assets.xcassets */; };
 		B10000000000000100000000 /* MatrixRainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000000 /* MatrixRainApp.swift */; };
 		B10000000000000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000001 /* ContentView.swift */; };
 		B10000000000000100000002 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000002 /* SettingsView.swift */; };
@@ -30,6 +31,7 @@
 		B1000000000000100000002 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B1000000000000100000003 /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportSheet.swift; sourceTree = "<group>"; };
 		B1000000000000100000004 /* MatrixRainExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainExporter.swift; sourceTree = "<group>"; };
+		B1000000000000100000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1000000000000300000000 /* MatrixRainApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MatrixRainApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		/* MatrixRainCore */
 		C1000000000000100000000 /* MatrixRainRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainRenderer.swift; sourceTree = "<group>"; };
@@ -58,6 +60,17 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B1000000000000900000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000100000007 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXGroup section */
 		A1000000000000500000000 = {
@@ -97,6 +110,7 @@
 				B1000000000000100000002 /* SettingsView.swift */,
 				B1000000000000100000003 /* ExportSheet.swift */,
 				B1000000000000100000004 /* MatrixRainExporter.swift */,
+				B1000000000000100000007 /* Assets.xcassets */,
 			);
 			path = MatrixRainApp;
 			sourceTree = "<group>";
@@ -128,6 +142,7 @@
 			buildPhases = (
 				B1000000000000800000000 /* Sources */,
 				B1000000000000400000000 /* Frameworks */,
+				B1000000000000900000001 /* Resources */,
 			);
 			buildRules = (
 			);
