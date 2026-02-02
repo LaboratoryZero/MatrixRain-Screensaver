@@ -46,9 +46,16 @@ final class MatrixRainVideoSaverView: ScreenSaverView {
             return
         }
 
-        let item = AVPlayerItem(url: url)
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
+        
+        // Optimize for smooth playback
+        item.preferredForwardBufferDuration = 5.0 // Buffer 5 seconds ahead
+        
         let queue = AVQueuePlayer(items: [])
         queue.actionAtItemEnd = .none
+        queue.automaticallyWaitsToMinimizeStalling = true
+        
         let looper = AVPlayerLooper(player: queue, templateItem: item)
 
         let layer = AVPlayerLayer(player: queue)
@@ -60,5 +67,7 @@ final class MatrixRainVideoSaverView: ScreenSaverView {
         self.player = queue
         self.playerLayer = layer
         self.playerLooper = looper
+        
+        os_log("Player setup complete", log: log, type: .info)
     }
 }

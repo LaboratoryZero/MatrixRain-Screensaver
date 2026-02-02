@@ -357,6 +357,14 @@ class ExportManager: ObservableObject {
         // Set up AVAssetWriter
         let writer = try AVAssetWriter(outputURL: videoURL, fileType: .mp4)
         
+        // Scale bitrate based on resolution - high quality but optimized for smooth playback
+        // 1080p: 8 Mbps, 4K: 20 Mbps, 5K: 30 Mbps, 6K: 40 Mbps
+        let pixelCount = config.resolution.width * config.resolution.height
+        let baseBitrate: Double = 8_000_000 // 8 Mbps base for 1080p
+        let basePixels: Double = 1920 * 1080
+        let scaledBitrate = Int(baseBitrate * (pixelCount / basePixels))
+        let clampedBitrate = min(max(scaledBitrate, 8_000_000), 40_000_000) // 8-40 Mbps range
+        
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(config.resolution.width),
@@ -367,7 +375,8 @@ class ExportManager: ObservableObject {
                 AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
             ],
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: 50_000_000, // 50 Mbps for high quality
+                AVVideoAverageBitRateKey: clampedBitrate,
+                AVVideoAllowFrameReorderingKey: false, // Reduce decode complexity
             ] as [String: Any]
         ]
         
