@@ -1,5 +1,7 @@
 import SwiftUI
 import AVFoundation
+import ImageIO
+import UniformTypeIdentifiers
 
 struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -89,13 +91,13 @@ struct ExportSheet: View {
                 }
                 .padding(.horizontal)
             }
-            
+
             if let error = exportManager.errorMessage {
                 Text(error)
                     .foregroundColor(.red)
                     .font(.caption)
             }
-            
+
             HStack {
                 Button("Cancel") {
                     if exportManager.isExporting {
@@ -104,9 +106,9 @@ struct ExportSheet: View {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Spacer()
-                
+
                 Button(exportManager.isExporting ? "Exporting..." : "Export") {
                     startExport()
                 }
@@ -120,10 +122,13 @@ struct ExportSheet: View {
     }
     
     private func startExport() {
+        MatrixSettings.refreshFromDisk()
+        let currentSettings = MatrixRainRenderer.Settings.fromMatrixSettings()
         let config = ExportConfig(
             resolution: selectedResolution.size,
             duration: duration,
-            frameRate: frameRate
+            frameRate: frameRate,
+            rendererSettings: currentSettings
         )
         exportManager.startExport(config: config) { [self] videoURL in
             if installAfterExport {
@@ -146,11 +151,10 @@ struct ExportSheet: View {
             if fileManager.fileExists(atPath: saverBundlePath.path) {
                 try fileManager.removeItem(at: saverBundlePath)
             }
-            
+
             // Find the built video saver from Xcode's DerivedData
-            // First try to find it relative to the app bundle
             var sourceSaverURL: URL?
-            
+
             // Option 1: Look in the same Products directory as the app
             if let appBundlePath = Bundle.main.bundlePath as String? {
                 let productsDir = URL(fileURLWithPath: appBundlePath).deletingLastPathComponent()
@@ -159,24 +163,19 @@ struct ExportSheet: View {
                     sourceSaverURL = potentialSaver
                 }
             }
-            
+
             // Option 2: Search DerivedData for the saver
             if sourceSaverURL == nil {
                 let derivedDataPath = fileManager.homeDirectoryForCurrentUser
                     .appendingPathComponent("Library/Developer/Xcode/DerivedData")
-                
-                // Look for MatrixRain-* folders first
                 if let contents = try? fileManager.contentsOfDirectory(at: derivedDataPath, includingPropertiesForKeys: nil) {
                     for folder in contents where folder.lastPathComponent.hasPrefix("MatrixRain-") {
-                        let potentialSaver = folder
-                            .appendingPathComponent("Build/Products/Debug/MatrixRainVideoSaver.saver")
+                        let potentialSaver = folder.appendingPathComponent("Build/Products/Debug/MatrixRainVideoSaver.saver")
                         if fileManager.fileExists(atPath: potentialSaver.path) {
                             sourceSaverURL = potentialSaver
                             break
                         }
-                        // Also check Release
-                        let releaseSaver = folder
-                            .appendingPathComponent("Build/Products/Release/MatrixRainVideoSaver.saver")
+                        let releaseSaver = folder.appendingPathComponent("Build/Products/Release/MatrixRainVideoSaver.saver")
                         if fileManager.fileExists(atPath: releaseSaver.path) {
                             sourceSaverURL = releaseSaver
                             break
@@ -184,23 +183,19 @@ struct ExportSheet: View {
                     }
                 }
             }
-            
+
             // Option 3: Build the saver on-the-fly if not found
             if sourceSaverURL == nil {
                 exportManager.statusMessage = "Building saver bundle..."
-                
-                // Create a minimal saver bundle structure manually
                 let contentsDir = saverBundlePath.appendingPathComponent("Contents")
                 let macOSDir = contentsDir.appendingPathComponent("MacOS")
                 let resourcesDir = contentsDir.appendingPathComponent("Resources")
-                
                 try fileManager.createDirectory(at: macOSDir, withIntermediateDirectories: true)
                 try fileManager.createDirectory(at: resourcesDir, withIntermediateDirectories: true)
-                
                 // Copy the video
                 let destVideoURL = resourcesDir.appendingPathComponent("Loop.mp4")
+                try? fileManager.removeItem(at: destVideoURL)
                 try fileManager.copyItem(at: videoURL, to: destVideoURL)
-                
                 // Create Info.plist
                 let infoPlist: [String: Any] = [
                     "CFBundleIdentifier": "com.matrixy.videosaver",
@@ -216,11 +211,9 @@ struct ExportSheet: View {
                 ]
                 let plistData = try PropertyListSerialization.data(fromPropertyList: infoPlist, format: .xml, options: 0)
                 try plistData.write(to: contentsDir.appendingPathComponent("Info.plist"))
-                
                 // Try to find and copy the compiled binary
                 let derivedDataPath = fileManager.homeDirectoryForCurrentUser
                     .appendingPathComponent("Library/Developer/Xcode/DerivedData")
-                
                 let enumerator = fileManager.enumerator(at: derivedDataPath, includingPropertiesForKeys: nil)
                 while let fileURL = enumerator?.nextObject() as? URL {
                     if fileURL.lastPathComponent == "MatrixRainVideoSaver.saver" && 
@@ -232,28 +225,36 @@ struct ExportSheet: View {
                         }
                     }
                 }
-                
-                exportManager.statusMessage = "✓ Installed to Screen Savers"
+                // Double-check video presence
+                if !fileManager.fileExists(atPath: destVideoURL.path) {
+                    exportManager.statusMessage = "Warning: Loop.mp4 missing from .saver!"
+                } else if let attrs = try? fileManager.attributesOfItem(atPath: destVideoURL.path), let size = attrs[.size] as? NSNumber, size.intValue == 0 {
+                    exportManager.statusMessage = "Warning: Loop.mp4 is zero bytes!"
+                } else {
+                    exportManager.statusMessage = "✓ Installed to Screen Savers"
+                }
                 return
             }
-            
+
             // Copy the pre-built saver bundle
             try fileManager.copyItem(at: sourceSaverURL!, to: saverBundlePath)
-            
-            // Create Resources directory if it doesn't exist
+
+            // Always overwrite the video in the bundle
             let resourcesDir = saverBundlePath.appendingPathComponent("Contents/Resources")
             if !fileManager.fileExists(atPath: resourcesDir.path) {
                 try fileManager.createDirectory(at: resourcesDir, withIntermediateDirectories: true)
             }
-            
-            // Inject the video into the copied bundle
             let destVideoURL = resourcesDir.appendingPathComponent("Loop.mp4")
-            if fileManager.fileExists(atPath: destVideoURL.path) {
-                try fileManager.removeItem(at: destVideoURL)
-            }
+            try? fileManager.removeItem(at: destVideoURL)
             try fileManager.copyItem(at: videoURL, to: destVideoURL)
-            
-            exportManager.statusMessage = "✓ Installed to Screen Savers"
+            // Double-check video presence
+            if !fileManager.fileExists(atPath: destVideoURL.path) {
+                exportManager.statusMessage = "Warning: Loop.mp4 missing from .saver!"
+            } else if let attrs = try? fileManager.attributesOfItem(atPath: destVideoURL.path), let size = attrs[.size] as? NSNumber, size.intValue == 0 {
+                exportManager.statusMessage = "Warning: Loop.mp4 is zero bytes!"
+            } else {
+                exportManager.statusMessage = "✓ Installed to Screen Savers"
+            }
         } catch {
             exportManager.errorMessage = "Install failed: \(error.localizedDescription)"
         }
@@ -264,6 +265,7 @@ struct ExportConfig {
     let resolution: CGSize
     let duration: Double
     let frameRate: Int
+    let rendererSettings: MatrixRainRenderer.Settings
     
     var totalFrames: Int {
         Int(duration) * frameRate
@@ -289,28 +291,45 @@ class ExportManager: ObservableObject {
         statusMessage = "Preparing..."
         errorMessage = nil
         self.onComplete = onComplete
-        
-        exportTask = Task.detached(priority: .userInitiated) { [weak self] in
+
+        exportTask?.cancel()
+
+        let updateStatus: @Sendable @MainActor (String) -> Void = { [weak self] message in
+            self?.statusMessage = message
+        }
+        let updateProgress: @Sendable @MainActor (Double, String?) -> Void = { [weak self] progress, message in
+            self?.progress = progress
+            if let message {
+                self?.statusMessage = message
+            }
+        }
+
+        exportTask = Task(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
             do {
-                let videoURL = try await self?.performExport(config: config)
+                let videoURL = try await Task.detached(priority: .userInitiated) {
+                    try await ExportManager.performExport(
+                        config: config,
+                        updateProgress: updateProgress,
+                        updateStatus: updateStatus
+                    )
+                }.value
                 await MainActor.run {
-                    self?.isComplete = true
-                    self?.statusMessage = "Export complete!"
-                    self?.isExporting = false
-                    if let url = videoURL {
-                        self?.outputURL = url
-                        self?.onComplete?(url)
-                    }
+                    self.isComplete = true
+                    self.statusMessage = "Export complete!"
+                    self.isExporting = false
+                    self.outputURL = videoURL
+                    self.onComplete?(videoURL)
                 }
             } catch is CancellationError {
                 await MainActor.run {
-                    self?.statusMessage = "Cancelled"
-                    self?.isExporting = false
+                    self.statusMessage = "Cancelled"
+                    self.isExporting = false
                 }
             } catch {
                 await MainActor.run {
-                    self?.errorMessage = error.localizedDescription
-                    self?.isExporting = false
+                    self.errorMessage = error.localizedDescription
+                    self.isExporting = false
                 }
             }
         }
@@ -322,14 +341,17 @@ class ExportManager: ObservableObject {
         statusMessage = "Cancelled"
     }
     
-    nonisolated private func performExport(config: ExportConfig) async throws -> URL {
+    nonisolated private static func performExport(
+        config: ExportConfig,
+        updateProgress: @Sendable @MainActor (Double, String?) -> Void,
+        updateStatus: @Sendable @MainActor (String) -> Void
+    ) async throws -> URL {
         // Create temp file
         let tempDir = FileManager.default.temporaryDirectory
         let videoURL = tempDir.appendingPathComponent("MatrixLoop_\(UUID().uuidString).mp4")
         
         // Set up renderer with current settings
-        let settings = MatrixRainRenderer.Settings.fromMatrixSettings()
-        let renderer = MatrixRainRenderer(settings: settings)
+        let renderer = MatrixRainRenderer(settings: config.rendererSettings)
         renderer.resize(to: config.resolution)
         
         // Set up AVAssetWriter
@@ -339,6 +361,11 @@ class ExportManager: ObservableObject {
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(config.resolution.width),
             AVVideoHeightKey: Int(config.resolution.height),
+            AVVideoColorPropertiesKey: [
+                AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
+                AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
+                AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
+            ],
             AVVideoCompressionPropertiesKey: [
                 AVVideoAverageBitRateKey: 50_000_000, // 50 Mbps for high quality
             ] as [String: Any]
@@ -350,9 +377,11 @@ class ExportManager: ObservableObject {
         let pixelBufferAdaptor = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: writerInput,
             sourcePixelBufferAttributes: [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB,
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
                 kCVPixelBufferWidthKey as String: Int(config.resolution.width),
-                kCVPixelBufferHeightKey as String: Int(config.resolution.height)
+                kCVPixelBufferHeightKey as String: Int(config.resolution.height),
+                kCVPixelBufferCGImageCompatibilityKey as String: true,
+                kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
             ]
         )
         
@@ -366,9 +395,7 @@ class ExportManager: ObservableObject {
         let frameDuration = CMTimeMake(value: 1, timescale: Int32(config.frameRate))
         let totalFrames = config.totalFrames
         
-        await MainActor.run {
-            statusMessage = "Rendering frames..."
-        }
+        await updateStatus("Rendering frames...")
         
         for frame in 0..<totalFrames {
             try Task.checkCancellation()
@@ -376,18 +403,17 @@ class ExportManager: ObservableObject {
             // Update renderer simulation
             renderer.update()
             
-            // Render frame to CGImage
-            guard let cgImage = renderer.renderFrame() else {
-                throw ExportError.renderFailed
-            }
-            
             // Wait for writer to be ready
             while !writerInput.isReadyForMoreMediaData {
                 try await Task.sleep(nanoseconds: 10_000_000) // 10ms
             }
             
-            // Create pixel buffer from CGImage
-            guard let pixelBuffer = createPixelBuffer(from: cgImage, size: config.resolution, adaptor: pixelBufferAdaptor) else {
+            // Create pixel buffer and draw directly into it
+            guard let pixelBuffer = createPixelBuffer(
+                renderer: renderer,
+                size: config.resolution,
+                adaptor: pixelBufferAdaptor
+            ) else {
                 throw ExportError.pixelBufferFailed
             }
             
@@ -398,12 +424,10 @@ class ExportManager: ObservableObject {
             if frame % 10 == 0 {
                 let currentProgress = Double(frame + 1) / Double(totalFrames)
                 let currentFrame = frame + 1
-                await MainActor.run { [weak self] in
-                    self?.progress = currentProgress
-                    if currentFrame % config.frameRate == 0 {
-                        self?.statusMessage = "Rendering frame \(currentFrame)/\(totalFrames)..."
-                    }
-                }
+                let message = currentFrame % config.frameRate == 0
+                    ? "Rendering frame \(currentFrame)/\(totalFrames)..."
+                    : nil
+                await updateProgress(currentProgress, message)
             }
         }
         
@@ -417,7 +441,11 @@ class ExportManager: ObservableObject {
         return videoURL
     }
     
-    nonisolated private func createPixelBuffer(from image: CGImage, size: CGSize, adaptor: AVAssetWriterInputPixelBufferAdaptor) -> CVPixelBuffer? {
+    nonisolated private static func createPixelBuffer(
+        renderer: MatrixRainRenderer,
+        size: CGSize,
+        adaptor: AVAssetWriterInputPixelBufferAdaptor
+    ) -> CVPixelBuffer? {
         guard let pool = adaptor.pixelBufferPool else { return nil }
         
         var pixelBuffer: CVPixelBuffer?
@@ -425,23 +453,34 @@ class ExportManager: ObservableObject {
         
         guard let buffer = pixelBuffer else { return nil }
         
+        // Attach sRGB color space to the pixel buffer so HEVC encoder interprets colors correctly
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        CVBufferSetAttachment(buffer, kCVImageBufferCGColorSpaceKey, colorSpace, .shouldPropagate)
+        
         CVPixelBufferLockBaseAddress(buffer, [])
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
         
+        // Use premultipliedLast (RGBA) to match BGRA pixel buffer with little-endian byte order
+        let bitmapInfo = CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         guard let context = CGContext(
             data: CVPixelBufferGetBaseAddress(buffer),
             width: Int(size.width),
             height: Int(size.height),
             bitsPerComponent: 8,
             bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
         ) else { return nil }
-        
-        context.draw(image, in: CGRect(origin: .zero, size: size))
+
+        // Match renderer's expected coordinate system (top-left origin)
+        context.translateBy(x: 0, y: size.height)
+        context.scaleBy(x: 1, y: -1)
+        renderer.draw(in: context)
         
         return buffer
     }
+
+
     
     enum ExportError: LocalizedError {
         case renderFailed

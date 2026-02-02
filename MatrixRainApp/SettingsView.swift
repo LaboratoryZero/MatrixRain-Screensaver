@@ -25,7 +25,7 @@ struct SettingsView: View {
         Form {
             Section("Size & Speed") {
                 LabeledContent("Glyph Size") {
-                    Slider(value: $glyphSize, in: 8...36, step: 1)
+                    Slider(value: $glyphSize, in: 8...50, step: 1)
                         .onChange(of: glyphSize) { _, newValue in
                             MatrixSettings.setGlyphSize(CGFloat(newValue))
                             notifySettingsChanged()
@@ -156,9 +156,10 @@ struct SettingsView: View {
             secondaryColor = Color(red: 0.49, green: 0.71, blue: 0.68)
             backgroundColor = Color(red: 0.14, green: 0.16, blue: 0.21)
         case .mocha:
-            primaryColor = Color(red: 0.65, green: 0.89, blue: 0.63)
-            secondaryColor = Color(red: 0.49, green: 0.71, blue: 0.68)
-            backgroundColor = Color(red: 0.12, green: 0.12, blue: 0.18)
+            // Catppuccin Mocha: Mauve head, Sky tail, Crust background
+            primaryColor = Color(red: 203/255, green: 166/255, blue: 247/255)   // Mauve #CBA6F7
+            secondaryColor = Color(red: 137/255, green: 220/255, blue: 235/255) // Sky #89DCEB
+            backgroundColor = Color(red: 17/255, green: 17/255, blue: 27/255)   // Crust #11111B
         case .defaults:
             glyphSize = Double(MatrixSettings.defaultGlyphSize)
             fallSpeed = Double(MatrixSettings.defaultFallSpeed)

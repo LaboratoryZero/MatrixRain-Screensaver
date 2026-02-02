@@ -133,7 +133,8 @@ public final class MatrixRainRenderer {
     
     /// Render a single frame to a CGImage (for offscreen/export).
     public func renderFrame() -> CGImage? {
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         guard let context = CGContext(
             data: nil,
             width: Int(size.width),
@@ -141,7 +142,7 @@ public final class MatrixRainRenderer {
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+            bitmapInfo: bitmapInfo
         ) else { return nil }
         
         // Flip for top-left origin
