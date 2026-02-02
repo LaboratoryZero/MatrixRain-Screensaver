@@ -5,15 +5,13 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>MatrixRain</string>
+    <string>MatrixRainVideo</string>
     <key>CFBundleExecutable</key>
-    <string>MatrixRain</string>
+    <string>MatrixRainVideo</string>
     <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <string>com.matrixy.videosaver</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>MatrixRain</string>
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>
@@ -21,6 +19,6 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>NSPrincipalClass</key>
-    <string>MatrixRainView</string>
+    <string>MatrixRainVideoSaverView</string>
 </dict>
 </plist>

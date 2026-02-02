@@ -115,6 +115,16 @@ Settings are stored in `~/Library/Application Support/MatrixRain/Settings.plist`
 - **Animation**: 60fps with time-delta based movement for smooth, consistent speed
 - **Settings Storage**: Plist file in Application Support (cross-process compatible)
 
+## Video-Player Saver Template (draft)
+
+Draft files for a minimal video-player saver target and an app-side exporter live in:
+- [MatrixRainVideoSaver/MatrixRainVideoSaverView.swift](MatrixRainVideoSaver/MatrixRainVideoSaverView.swift)
+- [MatrixRainVideoSaver/Info.plist](MatrixRainVideoSaver/Info.plist)
+- [MatrixRainApp/MatrixRainExporter.swift](MatrixRainApp/MatrixRainExporter.swift)
+- [docs/VideoSaverTemplate.md](docs/VideoSaverTemplate.md)
+
+These are not wired into the Xcode project yet; they are a starting point for adding a separate app target and a video-based saver target.
+
 ## License
 
 MIT License - See [LICENSE](LICENSE) for details.

@@ -1,5 +1,6 @@
 import ScreenSaver
 import CoreText
+import OSLog
 
 @objc(MatrixRainView)
 final class MatrixRainView: ScreenSaverView {
@@ -37,10 +38,14 @@ final class MatrixRainView: ScreenSaverView {
     private var cachedHaloGradient: CGGradient?    // Cached halo gradient
     private var cachedHaloRadius: CGFloat = 0      // Cached halo radius
     private var cachedGlyphs: [UniChar: CGGlyph] = [:]  // Cached glyph lookups
+    private let log = OSLog(subsystem: "com.matrixy.rain", category: "lifecycle")
+    private var observerTokens: [NSObjectProtocol] = []
 
     override var isFlipped: Bool { true }
 
     private var settingsCheckCounter: Int = 0
+    private var lastSettingsVersion: Int = MatrixSettings.version()
+    private var isRunning = false
 
     override init?(frame: NSRect, isPreview: Bool) {
         super.init(frame: frame, isPreview: isPreview)
@@ -58,6 +63,50 @@ final class MatrixRainView: ScreenSaverView {
         rebuildColumns()
     }
 
+    deinit {
+        os_log("deinit — forcing stopAnimation", log: log, type: .info)
+        stopAnimation()
+    }
+
+    override func startAnimation() {
+        isRunning = true
+        lastFrameTime = CFAbsoluteTimeGetCurrent()
+        os_log("startAnimation (preview=%{public}@)", log: log, type: .info, isPreview.description)
+        registerLifecycleObservers()
+        super.startAnimation()
+    }
+
+    override func stopAnimation() {
+        isRunning = false
+        columns.removeAll()
+        os_log("stopAnimation — columns cleared", log: log, type: .info)
+        removeLifecycleObservers()
+        super.stopAnimation()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            registerLifecycleObservers()
+        }
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        if newWindow == nil {
+            os_log("viewWillMove(toWindow: nil) — stopping", log: log, type: .info)
+            stopAnimation()
+        }
+        super.viewWillMove(toWindow: newWindow)
+    }
+
+    override func viewDidMoveToSuperview() {
+        super.viewDidMoveToSuperview()
+        if superview == nil {
+            os_log("viewDidMoveToSuperview nil — stopping", log: log, type: .info)
+            stopAnimation()
+        }
+    }
+
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
         rebuildColumns()
@@ -72,6 +121,12 @@ final class MatrixRainView: ScreenSaverView {
     }
 
     override func animateOneFrame() {
+        guard isRunning else { return }
+        if window == nil || superview == nil || window?.isVisible != true {
+            os_log("animateOneFrame without window/superview/visibility — stopping", log: log, type: .info)
+            stopAnimation()
+            return
+        }
         // Check settings every 15 frames (~0.25 sec at 60fps)
         settingsCheckCounter += 1
         if settingsCheckCounter >= 15 {
@@ -80,6 +135,37 @@ final class MatrixRainView: ScreenSaverView {
         }
         updateColumns()
         setNeedsDisplay(bounds)
+    }
+
+    private func registerLifecycleObservers() {
+        removeLifecycleObservers()
+        let center = NotificationCenter.default
+
+        let appToken = center.addObserver(forName: NSApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.handleLifecycleStop(reason: "app will resign active")
+        }
+        observerTokens.append(appToken)
+
+        if let owningWindow = window {
+            let windowToken = center.addObserver(forName: NSWindow.willCloseNotification, object: owningWindow, queue: .main) { [weak self] _ in
+                self?.handleLifecycleStop(reason: "window will close")
+            }
+            observerTokens.append(windowToken)
+        } else {
+            os_log("registerLifecycleObservers — window missing", log: log, type: .info)
+        }
+    }
+
+    private func removeLifecycleObservers() {
+        guard !observerTokens.isEmpty else { return }
+        let center = NotificationCenter.default
+        observerTokens.forEach { center.removeObserver($0) }
+        observerTokens.removeAll()
+    }
+
+    private func handleLifecycleStop(reason: String) {
+        os_log("lifecycle observer triggered: %{public}@", log: log, type: .info, reason)
+        stopAnimation()
     }
 
     override func draw(_ rect: NSRect) {
@@ -131,9 +217,9 @@ final class MatrixRainView: ScreenSaverView {
         primaryCGColor = primaryColor.withAlphaComponent(headBrightness).cgColor
         backgroundCGColor = backgroundColor.cgColor
         
-        // Cache halo gradient and radius
+        // Cache halo gradient and radius (only once)
         rebuildHaloCache()
-        
+
         // Pre-compute color variants for the tail with color transition
         // colorTransition controls how quickly we blend from primary to secondary color
         cachedAlphaColors.removeAll()
@@ -167,6 +253,7 @@ final class MatrixRainView: ScreenSaverView {
         
         // Cache halo gradient and radius
         rebuildHaloCache()
+        lastSettingsVersion = MatrixSettings.version()
     }
 
     private func rebuildHaloCache() {
@@ -202,6 +289,11 @@ final class MatrixRainView: ScreenSaverView {
     }
 
     private func reloadSettingsIfNeeded() {
+        let currentVersion = MatrixSettings.version()
+        guard currentVersion != lastSettingsVersion else { return }
+
+        os_log("settings changed (version %d -> %d)", log: log, type: .info, lastSettingsVersion, currentVersion)
+
         let newGlyphSize = MatrixSettings.glyphSize()
         let newSpeed = MatrixSettings.fallSpeed()
         let newPrimary = MatrixSettings.primaryColor()
@@ -275,6 +367,7 @@ final class MatrixRainView: ScreenSaverView {
                 cachedAlphaColors.append(color)
             }
             
+            lastSettingsVersion = currentVersion
             if needsRebuild {
                 rebuildColumns()
             }

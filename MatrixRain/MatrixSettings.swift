@@ -10,6 +10,9 @@ enum MatrixSettings {
         return folder.appendingPathComponent("Settings.plist")
     }()
     
+    // Bump this whenever settings change so renderers can cheaply detect updates
+    private static var settingsVersion: Int = 0
+
     private static var cachedSettings: [String: Any] = {
         loadFromDisk()
     }()
@@ -54,12 +57,20 @@ enum MatrixSettings {
     
     static func refreshFromDisk() {
         cachedSettings = loadFromDisk()
+        bumpVersion()
+    }
+
+    private static func bumpVersion() {
+        settingsVersion &+= 1
+    }
+
+    static func version() -> Int {
+        settingsVersion
     }
 
     // MARK: - Getters
 
     static func glyphSize() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[glyphSizeKey] as? Double {
             return CGFloat(value)
         }
@@ -67,7 +78,6 @@ enum MatrixSettings {
     }
 
     static func fallSpeed() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[fallSpeedKey] as? Double {
             return CGFloat(value)
         }
@@ -75,7 +85,6 @@ enum MatrixSettings {
     }
 
     static func primaryColor() -> NSColor {
-        refreshFromDisk()
         if let data = cachedSettings[palettePrimaryKey] as? Data,
            let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: data) {
             return color
@@ -84,7 +93,6 @@ enum MatrixSettings {
     }
 
     static func secondaryColor() -> NSColor {
-        refreshFromDisk()
         if let data = cachedSettings[paletteSecondaryKey] as? Data,
            let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: data) {
             return color
@@ -93,7 +101,6 @@ enum MatrixSettings {
     }
 
     static func backgroundColor() -> NSColor {
-        refreshFromDisk()
         if let data = cachedSettings[backgroundColorKey] as? Data,
            let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: data) {
             return color
@@ -106,17 +113,20 @@ enum MatrixSettings {
     static func setGlyphSize(_ value: CGFloat) {
         cachedSettings[glyphSizeKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 
     static func setFallSpeed(_ value: CGFloat) {
         cachedSettings[fallSpeedKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 
     static func setPrimaryColor(_ color: NSColor) {
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false) {
             cachedSettings[palettePrimaryKey] = data
             saveToDisk()
+            bumpVersion()
         }
     }
 
@@ -124,6 +134,7 @@ enum MatrixSettings {
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false) {
             cachedSettings[paletteSecondaryKey] = data
             saveToDisk()
+            bumpVersion()
         }
     }
 
@@ -131,13 +142,13 @@ enum MatrixSettings {
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false) {
             cachedSettings[backgroundColorKey] = data
             saveToDisk()
+            bumpVersion()
         }
     }
 
     // MARK: - Head Brightness
 
     static func headBrightness() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[headBrightnessKey] as? Double {
             return CGFloat(value)
         }
@@ -147,12 +158,12 @@ enum MatrixSettings {
     static func setHeadBrightness(_ value: CGFloat) {
         cachedSettings[headBrightnessKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 
     // MARK: - Head Glow
 
     static func headGlow() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[headGlowKey] as? Double {
             return CGFloat(value)
         }
@@ -162,12 +173,12 @@ enum MatrixSettings {
     static func setHeadGlow(_ value: CGFloat) {
         cachedSettings[headGlowKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 
     // MARK: - Fade Length
 
     static func fadeLength() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[fadeLengthKey] as? Double {
             return CGFloat(value)
         }
@@ -177,12 +188,12 @@ enum MatrixSettings {
     static func setFadeLength(_ value: CGFloat) {
         cachedSettings[fadeLengthKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 
     // MARK: - Color Transition
 
     static func colorTransition() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[colorTransitionKey] as? Double {
             return CGFloat(value)
         }
@@ -192,12 +203,12 @@ enum MatrixSettings {
     static func setColorTransition(_ value: CGFloat) {
         cachedSettings[colorTransitionKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 
     // MARK: - Column Density
 
     static func columnDensity() -> CGFloat {
-        refreshFromDisk()
         if let value = cachedSettings[columnDensityKey] as? Double {
             return CGFloat(value)
         }
@@ -207,5 +218,6 @@ enum MatrixSettings {
     static func setColumnDensity(_ value: CGFloat) {
         cachedSettings[columnDensityKey] = Double(value)
         saveToDisk()
+        bumpVersion()
     }
 }
