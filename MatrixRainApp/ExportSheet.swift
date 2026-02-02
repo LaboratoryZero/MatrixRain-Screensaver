@@ -7,31 +7,11 @@ struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var exportManager = ExportManager()
     
-    // Export settings
-    @State private var selectedResolution: Resolution = .uhd4K
+    // Export settings - locked to 1080p for optimal quality/performance
+    private let exportResolution = CGSize(width: 1920, height: 1080)
     @State private var duration: Double = 60
     @State private var frameRate: Int = 60
     @State private var installAfterExport: Bool = true
-    
-    enum Resolution: String, CaseIterable {
-        case hd720p = "720p"
-        case hd1080p = "1080p"
-        case qhd1440p = "1440p"
-        case uhd4K = "4K"
-        case uhd5K = "5K"
-        case uhd6K = "6K"
-        
-        var size: CGSize {
-            switch self {
-            case .hd720p:    return CGSize(width: 1280, height: 720)
-            case .hd1080p:   return CGSize(width: 1920, height: 1080)
-            case .qhd1440p:  return CGSize(width: 2560, height: 1440)
-            case .uhd4K:     return CGSize(width: 3840, height: 2160)
-            case .uhd5K:     return CGSize(width: 5120, height: 2880)
-            case .uhd6K:     return CGSize(width: 6016, height: 3384)
-            }
-        }
-    }
     
     var body: some View {
         VStack(spacing: 20) {
@@ -40,11 +20,9 @@ struct ExportSheet: View {
             
             Form {
                 Section("Video Settings") {
-                    Picker("Resolution", selection: $selectedResolution) {
-                        ForEach(Resolution.allCases, id: \.self) { res in
-                            Text("\(res.rawValue) (\(Int(res.size.width))×\(Int(res.size.height)))")
-                                .tag(res)
-                        }
+                    LabeledContent("Resolution") {
+                        Text("1080p (1920×1080)")
+                            .foregroundColor(.secondary)
                     }
                     
                     LabeledContent("Duration") {
@@ -125,7 +103,7 @@ struct ExportSheet: View {
         MatrixSettings.refreshFromDisk()
         let currentSettings = MatrixRainRenderer.Settings.fromMatrixSettings()
         let config = ExportConfig(
-            resolution: selectedResolution.size,
+            resolution: exportResolution,
             duration: duration,
             frameRate: frameRate,
             rendererSettings: currentSettings
@@ -357,14 +335,6 @@ class ExportManager: ObservableObject {
         // Set up AVAssetWriter
         let writer = try AVAssetWriter(outputURL: videoURL, fileType: .mp4)
         
-        // Scale bitrate based on resolution - high quality but optimized for smooth playback
-        // 1080p: 8 Mbps, 4K: 20 Mbps, 5K: 30 Mbps, 6K: 40 Mbps
-        let pixelCount = config.resolution.width * config.resolution.height
-        let baseBitrate: Double = 8_000_000 // 8 Mbps base for 1080p
-        let basePixels: Double = 1920 * 1080
-        let scaledBitrate = Int(baseBitrate * (pixelCount / basePixels))
-        let clampedBitrate = min(max(scaledBitrate, 8_000_000), 40_000_000) // 8-40 Mbps range
-        
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(config.resolution.width),
@@ -375,7 +345,7 @@ class ExportManager: ObservableObject {
                 AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
             ],
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: clampedBitrate,
+                AVVideoAverageBitRateKey: 50_000_000, // 50 Mbps for high quality
                 AVVideoAllowFrameReorderingKey: false, // Reduce decode complexity
             ] as [String: Any]
         ]

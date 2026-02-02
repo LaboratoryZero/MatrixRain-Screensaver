@@ -1,24 +1,7 @@
 import SwiftUI
 
-enum PreviewResolution: String, CaseIterable {
-    case r720p = "720p"
-    case r1080p = "1080p"
-    case r1440p = "1440p"
-    case r4k = "4K"
-    case r5k = "5K"
-    case r6k = "6K"
-    
-    var size: CGSize {
-        switch self {
-        case .r720p: return CGSize(width: 1280, height: 720)
-        case .r1080p: return CGSize(width: 1920, height: 1080)
-        case .r1440p: return CGSize(width: 2560, height: 1440)
-        case .r4k: return CGSize(width: 3840, height: 2160)
-        case .r5k: return CGSize(width: 5120, height: 2880)
-        case .r6k: return CGSize(width: 6016, height: 3384)
-        }
-    }
-}
+// Fixed 1080p resolution for optimal quality/performance
+private let previewSize = CGSize(width: 1920, height: 1080)
 
 struct ContentView: View {
     @StateObject private var viewModel = PreviewViewModel()
@@ -26,7 +9,7 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            MatrixPreviewView(renderer: viewModel.renderer, renderSize: viewModel.previewResolution.size)
+            MatrixPreviewView(renderer: viewModel.renderer, renderSize: previewSize)
                 .ignoresSafeArea()
             
             VStack {
@@ -35,14 +18,6 @@ struct ContentView: View {
                     Spacer()
                     
                     VStack(spacing: 12) {
-                        Picker("Preview", selection: $viewModel.previewResolution) {
-                            ForEach(PreviewResolution.allCases, id: \.self) { res in
-                                Text(res.rawValue).tag(res)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(width: 120)
-                        
                         Button("Settings") {
                             openSettings()
                         }
@@ -65,9 +40,6 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .matrixSettingsChanged)) { _ in
             viewModel.reloadSettings()
-        }
-        .onChange(of: viewModel.previewResolution) { _, newResolution in
-            viewModel.updateRenderSize(newResolution.size)
         }
     }
 }
@@ -179,21 +151,15 @@ class PreviewViewModel: ObservableObject {
     @Published var showExportSheet = false
     @Published var exportProgress: Double = 0
     @Published var isExporting = false
-    @Published var previewResolution: PreviewResolution = .r1080p
     
     init() {
         let settings = MatrixRainRenderer.Settings.fromMatrixSettings()
         renderer = MatrixRainRenderer(settings: settings)
-        renderer.resize(to: previewResolution.size)
+        renderer.resize(to: previewSize)
     }
     
     func reloadSettings() {
         renderer.settings = .fromMatrixSettings()
-        renderer.reset()
-    }
-    
-    func updateRenderSize(_ size: CGSize) {
-        renderer.resize(to: size)
         renderer.reset()
     }
 }
