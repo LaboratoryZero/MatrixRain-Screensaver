@@ -21,11 +21,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		/* MatrixRain */
-		A1000000000000100000000 /* MatrixRainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainView.swift; sourceTree = "<group>"; };
-		A1000000000000100000001 /* MatrixConfigSheetController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixConfigSheetController.swift; sourceTree = "<group>"; };
+		/* MatrixRainCore */
 		A1000000000000100000002 /* MatrixSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixSettings.swift; sourceTree = "<group>"; };
-		A1000000000000100000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000000000000200000000 /* ScreenSaver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenSaver.framework; path = System/Library/Frameworks/ScreenSaver.framework; sourceTree = SDKROOT; };
 		/* MatrixRainApp */
 		B1000000000000100000000 /* MatrixRainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainApp.swift; sourceTree = "<group>"; };
@@ -66,24 +63,12 @@
 		A1000000000000500000000 = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000500000001 /* MatrixRain */,
 				B1000000000000500000001 /* MatrixRainApp */,
 				C1000000000000500000001 /* MatrixRainCore */,
 				D1000000000000500000001 /* MatrixRainVideoSaver */,
 				A1000000000000500000002 /* Frameworks */,
 				A1000000000000500000003 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		A1000000000000500000001 /* MatrixRain */ = {
-			isa = PBXGroup;
-			children = (
-				A1000000000000100000000 /* MatrixRainView.swift */,
-				A1000000000000100000001 /* MatrixConfigSheetController.swift */,
-				A1000000000000100000002 /* MatrixSettings.swift */,
-				A1000000000000100000003 /* Info.plist */,
-			);
-			path = MatrixRain;
 			sourceTree = "<group>";
 		};
 		A1000000000000500000002 /* Frameworks */ = {
@@ -120,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				C1000000000000100000000 /* MatrixRainRenderer.swift */,
+				A1000000000000100000002 /* MatrixSettings.swift */,
 			);
 			path = MatrixRainCore;
 			sourceTree = "<group>";
