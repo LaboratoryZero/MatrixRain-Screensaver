@@ -30,7 +30,7 @@ A macOS screensaver that displays the iconic Matrix-style falling code rain anim
 
 ### From Release
 
-1. Download `MatrixRain-2.1.1.pkg` from the [Releases](https://github.com/LaboratoryZero/MatrixRain-Screensaver/releases) page
+1. Download `MatrixRain-2.1.2.pkg` from the [Releases](https://github.com/LaboratoryZero/MatrixRain-Screensaver/releases) page
 2. Double-click the pkg to install **MatrixRain** to your Applications folder
 3. Launch **MatrixRain** from Applications
 4. Customize your colors and settings
@@ -99,8 +99,17 @@ Version 2.0 pre-renders the animation once, then plays it back efficiently using
 | Setting | Options | Description |
 |---------|---------|-------------|
 | **Resolution** | 1080p / 4K / 5K | Output video resolution |
-| **Duration** | 10 - 300 sec | Length of the looping video |
+| **Duration** | 30 - 300 sec | Length of the looping video |
 | **Frame Rate** | 30 / 60 / 120 fps | Smoothness of animation |
+| **Loop Transition** | None / Glitch / Code Completion | How the video loops seamlessly |
+
+### Loop Transition Options
+
+| Transition | Duration | Description |
+|------------|----------|-------------|
+| **None** | - | Video loops with a hard cut (default) |
+| **Glitch** | 8 sec | Matrix-style system failure with error messages, then reboot sequence |
+| **Code Completion** | 15 sec | All columns finish falling naturally, fading to black |
 
 ### Catppuccin Theme Presets
 

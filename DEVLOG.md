@@ -8,6 +8,47 @@ A chronological record of the development process for the MatrixRain macOS scree
 
 ### February 3, 2026
 
+#### Loop Transition Effects & Export Improvements (v2.1.2)
+
+**New Features:**
+- Added **Loop Transition** picker with three options:
+  - **None**: Video loops with a hard cut (default)
+  - **Glitch**: Matrix-style system failure effect for seamless looping
+  - **Code Completion**: All columns finish falling, screen fades to black naturally
+
+**Glitch Transition Details:**
+- Three-phase effect: Corruption → Error → Reset
+- Corruption phase: Columns flicker, shift to red/orange, scan lines appear
+- Error phase: "SYSTEM FAILURE / ERR_0xC0DE_OVERFLOW / MATRIX CORE DUMP / REINITIALIZING..." messages
+- Reset phase: White flash, hex boot sequence, fade to black
+- 8 seconds duration for seamless loop back to frame 0
+
+**Code Completion Transition Details:**
+- Stops spawning new columns at transition start
+- Existing columns continue falling naturally
+- "Straggler acceleration" ensures slow columns catch up without jarring speed changes
+- Fast columns maintain speed, slow columns gradually accelerate (up to 8x)
+- Screen goes black naturally as last column falls off
+- 15 seconds duration for complete natural fall-off
+
+**Resolution-Specific Glitch Parameters:**
+- Implemented `GlitchParams` struct with hardcoded values for 1080p, 4K, and 5K
+- Scan lines, glitch bars, screen shake, boot sequence font all scale appropriately
+- Prevents visual inconsistency between resolutions
+
+**Export Improvements:**
+- Preview resolution now carries to export sheet (no need to re-select)
+- Minimum export duration set to 30 seconds (preserves experience)
+- Shared `ExportResolution` enum between ContentView and ExportSheet
+
+**Technical Details:**
+- Added `GlitchPhase` enum with `.completion(progress:)` case
+- `shouldPreventRespawn` property prevents column respawning during completion
+- `completionAccelerationFactor` calculates speed boost for stragglers
+- Glitch effects respect user's glyph size setting (no forced scaling)
+
+---
+
 #### Screensaver Installation Fix (v2.1.1)
 - Diagnosed why screensaver wasn't working when installed from .pkg on clean systems
 - Root cause: The app was searching for `MatrixRainVideoSaver.saver` in DerivedData, which doesn't exist on installed systems

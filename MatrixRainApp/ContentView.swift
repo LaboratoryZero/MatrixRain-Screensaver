@@ -1,21 +1,5 @@
 import SwiftUI
 
-private enum PreviewResolution: String, CaseIterable, Identifiable {
-    case p1080 = "1080p"
-    case p4k = "4K"
-    case p5k = "5K"
-    
-    var id: String { rawValue }
-    
-    var size: CGSize {
-        switch self {
-        case .p1080: return CGSize(width: 1920, height: 1080)
-        case .p4k: return CGSize(width: 3840, height: 2160)
-        case .p5k: return CGSize(width: 5120, height: 2880)
-        }
-    }
-}
-
 // Notification to pause/resume preview during export
 extension Notification.Name {
     static let pausePreview = Notification.Name("pausePreview")
@@ -25,7 +9,7 @@ extension Notification.Name {
 struct ContentView: View {
     @StateObject private var viewModel = PreviewViewModel()
     @Environment(\.openSettings) private var openSettings
-    @State private var previewResolution: PreviewResolution = .p1080
+    @State private var previewResolution: ExportResolution = .p1080
     
     var body: some View {
         ZStack {
@@ -39,7 +23,7 @@ struct ContentView: View {
                     
                     VStack(spacing: 12) {
                         Picker("Preview", selection: $previewResolution) {
-                            ForEach(PreviewResolution.allCases) { option in
+                            ForEach(ExportResolution.allCases) { option in
                                 Text(option.rawValue).tag(option)
                             }
                         }
@@ -67,7 +51,7 @@ struct ContentView: View {
             // Resume preview when export sheet closes
             NotificationCenter.default.post(name: .resumePreview, object: nil)
         }) {
-            ExportSheet()
+            ExportSheet(initialResolution: previewResolution)
                 .onAppear {
                     // Pause preview when export sheet opens
                     NotificationCenter.default.post(name: .pausePreview, object: nil)
@@ -215,7 +199,7 @@ class PreviewViewModel: ObservableObject {
     init() {
         let settings = MatrixRainRenderer.Settings.fromMatrixSettings()
         renderer = MatrixRainRenderer(settings: settings)
-        renderer.resize(to: PreviewResolution.p1080.size)
+        renderer.resize(to: ExportResolution.p1080.size)
     }
     
     func reloadSettings() {

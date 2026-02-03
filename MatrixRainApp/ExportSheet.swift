@@ -3,7 +3,7 @@ import AVFoundation
 import ImageIO
 import UniformTypeIdentifiers
 
-private enum ExportResolution: String, CaseIterable, Identifiable {
+enum ExportResolution: String, CaseIterable, Identifiable {
     case p1080 = "1080p"
     case p4k = "4K"
     case p5k = "5K"
@@ -19,15 +19,43 @@ private enum ExportResolution: String, CaseIterable, Identifiable {
     }
 }
 
+enum TransitionType: String, CaseIterable, Identifiable {
+    case none = "None"
+    case glitch = "Glitch"
+    case codeCompletion = "Code Completion"
+    
+    var id: String { rawValue }
+    
+    var description: String {
+        switch self {
+        case .none:
+            return "Video loops with a hard cut"
+        case .glitch:
+            return "Matrix-style system failure effect for seamless looping"
+        case .codeCompletion:
+            return "Code finishes falling, fades to black for seamless looping"
+        }
+    }
+}
+
 struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var exportManager = ExportManager()
     
-    // Export settings
-    @State private var exportResolution: ExportResolution = .p1080
+    // Initial resolution passed from preview
+    var initialResolution: ExportResolution
+    
+    // Export settings - initialized in init()
+    @State private var exportResolution: ExportResolution
     @State private var duration: Double = 60
     @State private var frameRate: Int = 60
     @State private var installAfterExport: Bool = true
+    @State private var transitionType: TransitionType = .none
+    
+    init(initialResolution: ExportResolution = .p1080) {
+        self.initialResolution = initialResolution
+        self._exportResolution = State(initialValue: initialResolution)
+    }
     
     var body: some View {
         VStack(spacing: 20) {
@@ -43,7 +71,7 @@ struct ExportSheet: View {
                     }
                     
                     LabeledContent("Duration") {
-                        Slider(value: $duration, in: 10...300, step: 10)
+                        Slider(value: $duration, in: 30...300, step: 10)
                         Text("\(Int(duration))s")
                             .frame(width: 50)
                     }
@@ -53,6 +81,15 @@ struct ExportSheet: View {
                         Text("60 fps").tag(60)
                         Text("120 fps").tag(120)
                     }
+                    
+                    Picker("Loop Transition", selection: $transitionType) {
+                        ForEach(TransitionType.allCases) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    Text(transitionType.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
                 Section("Installation") {
@@ -125,11 +162,13 @@ struct ExportSheet: View {
     private func startExport() {
         MatrixSettings.refreshFromDisk()
         let currentSettings = MatrixRainRenderer.Settings.fromMatrixSettings()
+        
         let config = ExportConfig(
             resolution: exportResolution.size,
             duration: duration,
             frameRate: frameRate,
-            rendererSettings: currentSettings
+            rendererSettings: currentSettings,
+            transitionType: transitionType
         )
         exportManager.startExport(config: config) { [self] videoURL in
             if installAfterExport {
@@ -253,9 +292,25 @@ struct ExportConfig {
     let duration: Double
     let frameRate: Int
     let rendererSettings: MatrixRainRenderer.Settings
+    let transitionType: TransitionType
     
     var totalFrames: Int {
         Int(duration) * frameRate
+    }
+    
+    /// Duration of transition effect in seconds
+    var transitionDuration: Double {
+        switch transitionType {
+        case .none: return 0
+        case .glitch: return 8.0
+        case .codeCompletion: return 15.0  // Stragglers accelerate to ensure all columns complete
+        }
+    }
+    
+    /// Frame where transition effect starts
+    var transitionStartFrame: Int {
+        guard transitionType != .none else { return totalFrames + 1 }
+        return max(0, totalFrames - Int(transitionDuration * Double(frameRate)))
     }
 }
 
@@ -402,21 +457,61 @@ class ExportManager: ObservableObject {
             // State holder for the closure
             final class ExportState: @unchecked Sendable {
                 let renderer: MatrixRainRenderer
+                let config: ExportConfig
                 var frameIndex = 0
                 var hasFinished = false
                 var pendingBuffer: CVPixelBuffer?
                 
-                init(settings: MatrixRainRenderer.Settings, resolution: CGSize) {
+                init(settings: MatrixRainRenderer.Settings, resolution: CGSize, config: ExportConfig) {
+                    self.config = config
                     renderer = MatrixRainRenderer(settings: settings)
                     renderer.resize(to: resolution)
                 }
+                
+                /// Apply transition phase based on current frame
+                func applyTransitionPhase() {
+                    let transitionStartFrame = config.transitionStartFrame
+                    let transitionFrames = config.totalFrames - transitionStartFrame
+                    
+                    guard frameIndex >= transitionStartFrame else {
+                        renderer.glitchPhase = .none
+                        return
+                    }
+                    
+                    let progress = Double(frameIndex - transitionStartFrame) / Double(transitionFrames)
+                    
+                    switch config.transitionType {
+                    case .none:
+                        renderer.glitchPhase = .none
+                        
+                    case .glitch:
+                        // Split into 3 phases: corruption (0-0.4), error (0.4-0.7), reset (0.7-1.0)
+                        if progress < 0.4 {
+                            let phaseProgress = progress / 0.4
+                            renderer.glitchPhase = .corruption(progress: phaseProgress)
+                        } else if progress < 0.7 {
+                            let phaseProgress = (progress - 0.4) / 0.3
+                            renderer.glitchPhase = .error(progress: phaseProgress)
+                        } else {
+                            let phaseProgress = (progress - 0.7) / 0.3
+                            renderer.glitchPhase = .reset(progress: phaseProgress)
+                        }
+                        
+                    case .codeCompletion:
+                        // Columns stop spawning and fall off, then fade to black
+                        renderer.glitchPhase = .completion(progress: progress)
+                    }
+                }
             }
-            let state = ExportState(settings: rendererSettings, resolution: resolution)
+            let state = ExportState(settings: rendererSettings, resolution: resolution, config: config)
             
             writerInput.requestMediaDataWhenReady(on: encodingQueue) { [pixelBufferAdaptor, writerInput] in
                 // Process frames synchronously while writer is ready
                 while writerInput.isReadyForMoreMediaData && state.frameIndex < totalFrames {
                     if state.pendingBuffer == nil {
+                        // Apply transition phase based on current frame
+                        state.applyTransitionPhase()
+                        
                         // Update simulation with fixed time step
                         state.renderer.update(fixedDelta: fixedDelta)
                         
