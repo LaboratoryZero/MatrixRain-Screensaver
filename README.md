@@ -41,8 +41,8 @@ A macOS screensaver that displays the iconic Matrix-style falling code rain anim
 
 ```bash
 # Clone the repository
-git clone https://github.com/LaboratoryZero/Matrix-y.git
-cd Matrix-y
+git clone https://github.com/LaboratoryZero/MatrixRain-Screensaver.git
+cd MatrixRain-Screensaver
 
 # Build the app (Release)
 xcodebuild -scheme MatrixRainApp -configuration Release build
