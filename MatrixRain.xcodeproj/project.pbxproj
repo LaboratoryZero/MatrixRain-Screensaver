@@ -32,7 +32,7 @@
 		B1000000000000100000003 /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportSheet.swift; sourceTree = "<group>"; };
 		B1000000000000100000004 /* MatrixRainExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainExporter.swift; sourceTree = "<group>"; };
 		B1000000000000100000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		B1000000000000300000000 /* MatrixRainApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MatrixRainApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000000000000300000000 /* MatrixRain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MatrixRain.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		/* MatrixRainCore */
 		C1000000000000100000000 /* MatrixRainRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRainRenderer.swift; sourceTree = "<group>"; };
 		/* MatrixRainVideoSaver */
@@ -96,7 +96,7 @@
 		A1000000000000500000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B1000000000000300000000 /* MatrixRainApp.app */,
+				B1000000000000300000000 /* MatrixRain.app */,
 				D1000000000000300000000 /* MatrixRainVideoSaver.saver */,
 			);
 			name = Products;
@@ -149,8 +149,8 @@
 			dependencies = (
 			);
 			name = MatrixRainApp;
-			productName = MatrixRainApp;
-			productReference = B1000000000000300000000 /* MatrixRainApp.app */;
+			productName = MatrixRain;
+			productReference = B1000000000000300000000 /* MatrixRain.app */;
 			productType = "com.apple.product-type.application";
 		};
 		D1000000000000600000000 /* MatrixRainVideoSaver */ = {
@@ -284,7 +284,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.matrixy.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = MatrixRain;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -313,7 +313,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.matrixy.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = MatrixRain;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;

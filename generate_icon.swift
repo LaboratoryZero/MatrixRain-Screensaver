@@ -23,6 +23,12 @@ func generateMatrixIcon(size: Int) -> NSBitmapImageRep {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
     
+    // Rotate 180° to correct icon orientation
+    let transform = NSAffineTransform()
+    transform.translateX(by: CGFloat(size), yBy: CGFloat(size))
+    transform.rotate(byDegrees: 180)
+    transform.concat()
+    
     // Background - dark black/green
     NSColor(red: 0.02, green: 0.05, blue: 0.02, alpha: 1.0).setFill()
     NSRect(x: 0, y: 0, width: size, height: size).fill()

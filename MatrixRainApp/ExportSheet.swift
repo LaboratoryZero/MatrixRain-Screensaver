@@ -3,12 +3,28 @@ import AVFoundation
 import ImageIO
 import UniformTypeIdentifiers
 
+private enum ExportResolution: String, CaseIterable, Identifiable {
+    case p1080 = "1080p"
+    case p4k = "4K"
+    case p5k = "5K"
+    
+    var id: String { rawValue }
+    
+    var size: CGSize {
+        switch self {
+        case .p1080: return CGSize(width: 1920, height: 1080)
+        case .p4k: return CGSize(width: 3840, height: 2160)
+        case .p5k: return CGSize(width: 5120, height: 2880)
+        }
+    }
+}
+
 struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var exportManager = ExportManager()
     
-    // Export settings - locked to 1080p for optimal quality/performance
-    private let exportResolution = CGSize(width: 1920, height: 1080)
+    // Export settings
+    @State private var exportResolution: ExportResolution = .p1080
     @State private var duration: Double = 60
     @State private var frameRate: Int = 60
     @State private var installAfterExport: Bool = true
@@ -20,9 +36,10 @@ struct ExportSheet: View {
             
             Form {
                 Section("Video Settings") {
-                    LabeledContent("Resolution") {
-                        Text("1080p (1920×1080)")
-                            .foregroundColor(.secondary)
+                    Picker("Resolution", selection: $exportResolution) {
+                        ForEach(ExportResolution.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
                     }
                     
                     LabeledContent("Duration") {
@@ -47,11 +64,17 @@ struct ExportSheet: View {
                 
                 Section("Estimated") {
                     let totalFrames = Int(duration) * frameRate
-                    let estimatedSizeMB = Double(totalFrames) * 0.15 // rough estimate
+                    let bitrateMbps = 40.0
+                    let estimatedSizeMB = (bitrateMbps * duration / 8.0) * 1.03 // bitrate + container overhead
                     HStack {
                         Text("Frames: \(totalFrames)")
                         Spacer()
                         Text("Est. size: \(Int(estimatedSizeMB)) MB")
+                    }
+                    HStack {
+                        Text("Bitrate: \(Int(bitrateMbps)) Mbps")
+                        Spacer()
+                        Text("Duration: \(Int(duration))s")
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -77,7 +100,7 @@ struct ExportSheet: View {
             }
 
             HStack {
-                Button("Cancel") {
+                Button(exportManager.isComplete ? "OK" : "Cancel") {
                     if exportManager.isExporting {
                         exportManager.cancel()
                     }
@@ -103,7 +126,7 @@ struct ExportSheet: View {
         MatrixSettings.refreshFromDisk()
         let currentSettings = MatrixRainRenderer.Settings.fromMatrixSettings()
         let config = ExportConfig(
-            resolution: exportResolution,
+            resolution: exportResolution.size,
             duration: duration,
             frameRate: frameRate,
             rendererSettings: currentSettings
@@ -321,8 +344,8 @@ class ExportManager: ObservableObject {
     
     nonisolated private static func performExport(
         config: ExportConfig,
-        updateProgress: @Sendable @MainActor (Double, String?) -> Void,
-        updateStatus: @Sendable @MainActor (String) -> Void
+        updateProgress: @escaping @Sendable @MainActor (Double, String?) -> Void,
+        updateStatus: @escaping @Sendable @MainActor (String) -> Void
     ) async throws -> URL {
         // Create temp file
         let tempDir = FileManager.default.temporaryDirectory
@@ -380,6 +403,9 @@ class ExportManager: ObservableObject {
         let rendererSettings = config.rendererSettings
         
         await updateStatus("Rendering and encoding...")
+        let progressHandler: @Sendable (Double, String?) -> Void = { progress, message in
+            Task { await updateProgress(progress, message) }
+        }
         
         // Single-pass: render and encode on dedicated queue using requestMediaDataWhenReady
         // This avoids async/await context switching and memory pressure from caching
@@ -392,6 +418,7 @@ class ExportManager: ObservableObject {
                 let renderer: MatrixRainRenderer
                 var frameIndex = 0
                 var hasFinished = false
+                var pendingBuffer: CVPixelBuffer?
                 
                 init(settings: MatrixRainRenderer.Settings, resolution: CGSize) {
                     renderer = MatrixRainRenderer(settings: settings)
@@ -403,26 +430,40 @@ class ExportManager: ObservableObject {
             writerInput.requestMediaDataWhenReady(on: encodingQueue) { [pixelBufferAdaptor, writerInput] in
                 // Process frames synchronously while writer is ready
                 while writerInput.isReadyForMoreMediaData && state.frameIndex < totalFrames {
-                    // Update simulation with fixed time step
-                    state.renderer.update(fixedDelta: fixedDelta)
-                    
-                    // Render directly to pixel buffer
-                    guard let pixelBuffer = Self.createPixelBuffer(
-                        renderer: state.renderer,
-                        size: resolution,
-                        adaptor: pixelBufferAdaptor
-                    ) else {
-                        if !state.hasFinished {
-                            state.hasFinished = true
-                            continuation.resume(throwing: ExportError.pixelBufferFailed)
+                    if state.pendingBuffer == nil {
+                        // Update simulation with fixed time step
+                        state.renderer.update(fixedDelta: fixedDelta)
+                        
+                        // Render directly to pixel buffer
+                        guard let pixelBuffer = Self.createPixelBuffer(
+                            renderer: state.renderer,
+                            size: resolution,
+                            adaptor: pixelBufferAdaptor
+                        ) else {
+                            if !state.hasFinished {
+                                state.hasFinished = true
+                                continuation.resume(throwing: ExportError.pixelBufferFailed)
+                            }
+                            return
                         }
-                        return
+                        state.pendingBuffer = pixelBuffer
                     }
                     
+                    guard let pending = state.pendingBuffer else { return }
                     let presentationTime = CMTimeMultiply(frameDuration, multiplier: Int32(state.frameIndex))
-                    pixelBufferAdaptor.append(pixelBuffer, withPresentationTime: presentationTime)
+                    let appended = pixelBufferAdaptor.append(pending, withPresentationTime: presentationTime)
                     
-                    state.frameIndex += 1
+                    if appended {
+                        state.pendingBuffer = nil
+                        state.frameIndex += 1
+                        if state.frameIndex % 10 == 0 {
+                            let progress = Double(state.frameIndex) / Double(totalFrames)
+                            progressHandler(progress, "Rendering frame \(state.frameIndex)/\(totalFrames)...")
+                        }
+                    } else {
+                        // Writer not ready; retry this same frame later without advancing simulation.
+                        return
+                    }
                 }
                 
                 // Done

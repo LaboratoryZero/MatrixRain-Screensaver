@@ -1,6 +1,6 @@
 # MatrixRain Screensaver
 
-A macOS screensaver that displays the iconic Matrix-style falling code rain animation. Features a companion app for customizing colors and effects, with high-quality video export up to 6K resolution.
+A macOS screensaver that displays the iconic Matrix-style falling code rain animation. Features a companion app for customizing colors and effects, with high-quality video export up to 5K resolution.
 
 ![macOS](https://img.shields.io/badge/macOS-14.0%2B-green)
 ![Swift](https://img.shields.io/badge/Swift-5-orange)
@@ -10,8 +10,8 @@ A macOS screensaver that displays the iconic Matrix-style falling code rain anim
 ## Features
 
 - **Video-Based Screensaver**: Zero CPU/GPU load during playback - just plays a pre-rendered video
-- **High Resolution Export**: Render at 720p, 1080p, 1440p, 4K, 5K, or 6K
-- **Live Preview**: See exactly how your export will look before rendering
+- **High Resolution Export**: Render at 1080p, 4K, or 5K
+- **Live Preview**: Preview at 1080p, 4K, or 5K before rendering
 - **Authentic Matrix Effect**: Falling columns of Japanese katakana and numeric characters
 - **Customizable Colors**: Head, tail, and background color selection
 - **Head Glow Effect**: Adjustable brightness and white-hot glow for lead characters
@@ -32,9 +32,9 @@ A macOS screensaver that displays the iconic Matrix-style falling code rain anim
 
 1. Download `MatrixRain-2.0.0.dmg` from the [Releases](https://github.com/LaboratoryZero/Matrix-y/releases) page
 2. Open the DMG and drag both items to your Applications folder (optional)
-3. Launch **MatrixRainApp**
+3. Launch **MatrixRain**
 4. Customize your colors and settings
-5. Select your preferred resolution in the preview
+5. Select your preferred resolution in the preview or export sheet
 6. Click **Export Video** → Check **Install as Screen Saver** → **Start Export**
 7. Open **System Settings → Screen Saver** and select **MatrixRain**
 
@@ -59,7 +59,7 @@ open ~/Library/Developer/Xcode/DerivedData/MatrixRain-*/Build/Products/Release/
 
 ### Two-Component Architecture
 
-1. **MatrixRainApp** - A standalone macOS app for:
+1. **MatrixRain** - A standalone macOS app for:
    - Live preview of the Matrix rain effect
    - Color and effect customization
    - Video export at various resolutions
@@ -99,9 +99,9 @@ Version 2.0 pre-renders the animation once, then plays it back efficiently using
 
 | Setting | Options | Description |
 |---------|---------|-------------|
-| **Resolution** | 720p - 6K | Output video resolution |
+| **Resolution** | 1080p / 4K / 5K | Output video resolution |
 | **Duration** | 10 - 300 sec | Length of the looping video |
-| **Frame Rate** | 30 / 60 fps | Smoothness of animation |
+| **Frame Rate** | 30 / 60 / 120 fps | Smoothness of animation |
 
 ### Catppuccin Theme Presets
 
@@ -133,14 +133,14 @@ Higher resolutions (4K+) require more time to render. A 60-second 4K export typi
 ### App won't open (unsigned)
 
 ```bash
-xattr -cr /path/to/MatrixRainApp.app
+xattr -cr /path/to/MatrixRain.app
 ```
 
 ## Project Structure
 
 ```
 Matrix-y/
-├── MatrixRainApp/           # Main configuration app
+├── MatrixRainApp/           # Main configuration app (MatrixRain.app)
 │   ├── ContentView.swift    # Preview with resolution selector
 │   ├── SettingsView.swift   # Color/effect settings
 │   ├── ExportSheet.swift    # Video export & install
@@ -157,9 +157,9 @@ Matrix-y/
 
 ## Technical Details
 
-- **Video Codec**: HEVC (H.265) with hardware encoding
+- **Video Codec**: H.264 with hardware encoding
 - **Color Space**: sRGB with Rec.709 color properties
-- **Bitrate**: 50 Mbps for high quality
+- **Bitrate**: 40 Mbps for high quality
 - **Rendering**: Core Text (CTFont) for efficient glyph drawing
 - **Font**: Hiragino Kaku Gothic ProN for Japanese katakana
 - **Animation**: Time-delta based for consistent speed
@@ -169,8 +169,8 @@ Matrix-y/
 
 ### v2.0.0 (2025-02-02)
 - Complete rewrite with video-based screensaver architecture
-- Added MatrixRainApp for configuration and export
-- Live preview with resolution selector (720p - 6K)
+- Added MatrixRain app for configuration and export
+- Live preview with resolution selector (1080p / 4K / 5K)
 - Fixed color export issues (sRGB color space attachment)
 - Removed legacy real-time rendering (caused CPU/GPU overload)
 - Updated Mocha preset with Catppuccin Mauve head color

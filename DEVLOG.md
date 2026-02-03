@@ -89,6 +89,24 @@ A chronological record of the development process for the MatrixRain macOS scree
 
 ---
 
+### February 3, 2026
+
+#### App Naming & Packaging
+- Renamed built app bundle to **MatrixRain.app** (product name updated)
+- Updated README usage instructions and paths
+
+#### Export/Playback Optimizations
+- Export now uses H.264 encoding with 40 Mbps target bitrate
+- Encoding loop avoids frame drops by retrying append when writer isn’t ready
+- Added accurate file size estimate based on bitrate and duration
+- Restored export progress updates during encoding
+
+#### UI/UX Improvements
+- App icon regenerated with corrected 180° orientation
+- Main window close now terminates the app and closes auxiliary windows
+
+---
+
 ## Architecture
 
 ```
