@@ -336,7 +336,7 @@ class ExportManager: ObservableObject {
         let writer = try AVAssetWriter(outputURL: videoURL, fileType: .mp4)
         
         let videoSettings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecType.hevc,
+            AVVideoCodecKey: AVVideoCodecType.h264, // H.264 is much lighter to decode than HEVC
             AVVideoWidthKey: Int(config.resolution.width),
             AVVideoHeightKey: Int(config.resolution.height),
             AVVideoColorPropertiesKey: [
@@ -345,8 +345,8 @@ class ExportManager: ObservableObject {
                 AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
             ],
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: 50_000_000, // 50 Mbps for high quality
-                AVVideoAllowFrameReorderingKey: false, // Reduce decode complexity
+                AVVideoAverageBitRateKey: 40_000_000, // 40 Mbps - H.264 needs slightly more bitrate
+                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel, // High profile for best quality
             ] as [String: Any]
         ]
         
@@ -432,7 +432,7 @@ class ExportManager: ObservableObject {
         
         guard let buffer = pixelBuffer else { return nil }
         
-        // Attach sRGB color space to the pixel buffer so HEVC encoder interprets colors correctly
+        // Attach sRGB color space to the pixel buffer so encoder interprets colors correctly
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
         CVBufferSetAttachment(buffer, kCVImageBufferCGColorSpaceKey, colorSpace, .shouldPropagate)
         

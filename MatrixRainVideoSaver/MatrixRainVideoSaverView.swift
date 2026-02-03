@@ -25,7 +25,10 @@ final class MatrixRainVideoSaverView: ScreenSaverView {
 
     override func startAnimation() {
         super.startAnimation()
-        player?.play()
+        // Seek to start and play to ensure video is ready
+        player?.seek(to: .zero) { [weak self] _ in
+            self?.player?.play()
+        }
         os_log("startAnimation", log: log, type: .info)
     }
 
@@ -56,18 +59,25 @@ final class MatrixRainVideoSaverView: ScreenSaverView {
         queue.actionAtItemEnd = .none
         queue.automaticallyWaitsToMinimizeStalling = true
         
+        // Start playing immediately so first frame is ready
+        queue.play()
+        
         let looper = AVPlayerLooper(player: queue, templateItem: item)
 
-        let layer = AVPlayerLayer(player: queue)
-        layer.frame = bounds
-        layer.videoGravity = .resizeAspectFill
+        // Setup layer-backed view with player layer
         wantsLayer = true
-        self.layer?.addSublayer(layer)
+        layer?.backgroundColor = NSColor.black.cgColor
+        
+        let playerLyr = AVPlayerLayer(player: queue)
+        playerLyr.frame = bounds
+        playerLyr.videoGravity = .resizeAspectFill
+        playerLyr.backgroundColor = NSColor.black.cgColor
+        layer?.addSublayer(playerLyr)
 
         self.player = queue
-        self.playerLayer = layer
+        self.playerLayer = playerLyr
         self.playerLooper = looper
         
-        os_log("Player setup complete", log: log, type: .info)
+        os_log("Player setup complete, bounds: %{public}@", log: log, type: .info, String(describing: bounds))
     }
 }
