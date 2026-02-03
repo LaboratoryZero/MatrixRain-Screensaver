@@ -30,13 +30,12 @@ A macOS screensaver that displays the iconic Matrix-style falling code rain anim
 
 ### From Release
 
-1. Download `MatrixRain-2.1.0.dmg` from the [Releases](https://github.com/LaboratoryZero/Matrix-y/releases) page
-2. Open the DMG and drag both items to your Applications folder (optional)
-3. Launch **MatrixRain**
+1. Download `MatrixRain-2.1.1.pkg` from the [Releases](https://github.com/LaboratoryZero/MatrixRain-Screensaver/releases) page
+2. Double-click the pkg to install **MatrixRain** to your Applications folder
+3. Launch **MatrixRain** from Applications
 4. Customize your colors and settings
-5. Select your preferred resolution in the preview or export sheet
-6. Click **Export Video** → Check **Install as Screen Saver** → **Start Export**
-7. Open **System Settings → Screen Saver** and select **MatrixRain**
+5. Click **Export Video** → Ensure **Install after export** is checked → **Export**
+6. Open **System Settings → Screen Saver** and select **Matrix Rain**
 
 ### Build from Source
 
