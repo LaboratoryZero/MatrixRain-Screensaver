@@ -117,8 +117,9 @@ public final class MatrixRainRenderer {
     }
     
     /// Advance simulation by one frame (call at desired fps).
-    public func update() {
-        updateColumns()
+    /// Use fixedDelta for consistent timing during video export.
+    public func update(fixedDelta: Double? = nil) {
+        updateColumns(fixedDelta: fixedDelta)
     }
     
     /// Draw the current state into the given context.
@@ -305,10 +306,17 @@ public final class MatrixRainRenderer {
         columns.append(Column(x: x, headRow: headRow, speed: speed, length: length, glyphs: glyphs, accumulator: 0))
     }
     
-    private func updateColumns() {
-        let now = CFAbsoluteTimeGetCurrent()
-        let delta = min(0.1, max(0.0, now - lastFrameTime))
-        lastFrameTime = now
+    private func updateColumns(fixedDelta: Double? = nil) {
+        let delta: Double
+        if let fixed = fixedDelta {
+            // Use fixed delta for consistent timing (video export)
+            delta = fixed
+        } else {
+            // Use real-time delta for interactive preview
+            let now = CFAbsoluteTimeGetCurrent()
+            delta = min(0.1, max(0.0, now - lastFrameTime))
+            lastFrameTime = now
+        }
         
         for index in columns.indices {
             columns[index].accumulator += columns[index].speed * delta

@@ -3,6 +3,12 @@ import SwiftUI
 // Fixed 1080p resolution for optimal quality/performance
 private let previewSize = CGSize(width: 1920, height: 1080)
 
+// Notification to pause/resume preview during export
+extension Notification.Name {
+    static let pausePreview = Notification.Name("pausePreview")
+    static let resumePreview = Notification.Name("resumePreview")
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = PreviewViewModel()
     @Environment(\.openSettings) private var openSettings
@@ -35,8 +41,15 @@ struct ContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showExportSheet) {
+        .sheet(isPresented: $viewModel.showExportSheet, onDismiss: {
+            // Resume preview when export sheet closes
+            NotificationCenter.default.post(name: .resumePreview, object: nil)
+        }) {
             ExportSheet()
+                .onAppear {
+                    // Pause preview when export sheet opens
+                    NotificationCenter.default.post(name: .pausePreview, object: nil)
+                }
         }
         .onReceive(NotificationCenter.default.publisher(for: .matrixSettingsChanged)) { _ in
             viewModel.reloadSettings()
@@ -67,6 +80,8 @@ class MatrixPreviewNSView: NSView {
         }
     }
     private var displayLink: CVDisplayLink?
+    private var pauseObserver: Any?
+    private var resumeObserver: Any?
     
     init(renderer: MatrixRainRenderer, renderSize: CGSize) {
         self.renderer = renderer
@@ -75,6 +90,18 @@ class MatrixPreviewNSView: NSView {
         wantsLayer = true
         renderer.resize(to: renderSize)
         startDisplayLink()
+        
+        // Listen for pause/resume notifications
+        pauseObserver = NotificationCenter.default.addObserver(
+            forName: .pausePreview, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.stopDisplayLink()
+        }
+        resumeObserver = NotificationCenter.default.addObserver(
+            forName: .resumePreview, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.startDisplayLink()
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -83,6 +110,12 @@ class MatrixPreviewNSView: NSView {
     
     deinit {
         stopDisplayLink()
+        if let observer = pauseObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = resumeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
     override var isFlipped: Bool { true }

@@ -328,15 +328,13 @@ class ExportManager: ObservableObject {
         let tempDir = FileManager.default.temporaryDirectory
         let videoURL = tempDir.appendingPathComponent("MatrixLoop_\(UUID().uuidString).mp4")
         
-        // Set up renderer with current settings
-        let renderer = MatrixRainRenderer(settings: config.rendererSettings)
-        renderer.resize(to: config.resolution)
+        await updateStatus("Preparing export...")
         
         // Set up AVAssetWriter
         let writer = try AVAssetWriter(outputURL: videoURL, fileType: .mp4)
         
         let videoSettings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecType.h264, // H.264 is much lighter to decode than HEVC
+            AVVideoCodecKey: AVVideoCodecType.h264,
             AVVideoWidthKey: Int(config.resolution.width),
             AVVideoHeightKey: Int(config.resolution.height),
             AVVideoColorPropertiesKey: [
@@ -345,8 +343,12 @@ class ExportManager: ObservableObject {
                 AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
             ],
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: 40_000_000, // 40 Mbps - H.264 needs slightly more bitrate
-                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel, // High profile for best quality
+                AVVideoAverageBitRateKey: 40_000_000,
+                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+                AVVideoMaxKeyFrameIntervalKey: config.frameRate,
+                AVVideoMaxKeyFrameIntervalDurationKey: 1.0,
+                AVVideoExpectedSourceFrameRateKey: config.frameRate,
+                AVVideoAllowFrameReorderingKey: false,
             ] as [String: Any]
         ]
         
@@ -371,46 +373,67 @@ class ExportManager: ObservableObject {
         // Wait for pixel buffer pool to be ready
         try await Task.sleep(nanoseconds: 100_000_000) // 100ms
         
-        let frameDuration = CMTimeMake(value: 1, timescale: Int32(config.frameRate))
         let totalFrames = config.totalFrames
+        let frameDuration = CMTimeMake(value: 1, timescale: Int32(config.frameRate))
+        let fixedDelta = 1.0 / Double(config.frameRate)
+        let resolution = config.resolution
+        let rendererSettings = config.rendererSettings
         
-        await updateStatus("Rendering frames...")
+        await updateStatus("Rendering and encoding...")
         
-        for frame in 0..<totalFrames {
-            try Task.checkCancellation()
+        // Single-pass: render and encode on dedicated queue using requestMediaDataWhenReady
+        // This avoids async/await context switching and memory pressure from caching
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            // High-priority dedicated queue for encoding
+            let encodingQueue = DispatchQueue(label: "com.matrixy.encoding", qos: .userInitiated)
             
-            // Update renderer simulation
-            renderer.update()
-            
-            // Wait for writer to be ready
-            while !writerInput.isReadyForMoreMediaData {
-                try await Task.sleep(nanoseconds: 10_000_000) // 10ms
+            // State holder for the closure
+            final class ExportState: @unchecked Sendable {
+                let renderer: MatrixRainRenderer
+                var frameIndex = 0
+                var hasFinished = false
+                
+                init(settings: MatrixRainRenderer.Settings, resolution: CGSize) {
+                    renderer = MatrixRainRenderer(settings: settings)
+                    renderer.resize(to: resolution)
+                }
             }
+            let state = ExportState(settings: rendererSettings, resolution: resolution)
             
-            // Create pixel buffer and draw directly into it
-            guard let pixelBuffer = createPixelBuffer(
-                renderer: renderer,
-                size: config.resolution,
-                adaptor: pixelBufferAdaptor
-            ) else {
-                throw ExportError.pixelBufferFailed
-            }
-            
-            let presentationTime = CMTimeMultiply(frameDuration, multiplier: Int32(frame))
-            pixelBufferAdaptor.append(pixelBuffer, withPresentationTime: presentationTime)
-            
-            // Update progress on main thread periodically
-            if frame % 10 == 0 {
-                let currentProgress = Double(frame + 1) / Double(totalFrames)
-                let currentFrame = frame + 1
-                let message = currentFrame % config.frameRate == 0
-                    ? "Rendering frame \(currentFrame)/\(totalFrames)..."
-                    : nil
-                await updateProgress(currentProgress, message)
+            writerInput.requestMediaDataWhenReady(on: encodingQueue) { [pixelBufferAdaptor, writerInput] in
+                // Process frames synchronously while writer is ready
+                while writerInput.isReadyForMoreMediaData && state.frameIndex < totalFrames {
+                    // Update simulation with fixed time step
+                    state.renderer.update(fixedDelta: fixedDelta)
+                    
+                    // Render directly to pixel buffer
+                    guard let pixelBuffer = Self.createPixelBuffer(
+                        renderer: state.renderer,
+                        size: resolution,
+                        adaptor: pixelBufferAdaptor
+                    ) else {
+                        if !state.hasFinished {
+                            state.hasFinished = true
+                            continuation.resume(throwing: ExportError.pixelBufferFailed)
+                        }
+                        return
+                    }
+                    
+                    let presentationTime = CMTimeMultiply(frameDuration, multiplier: Int32(state.frameIndex))
+                    pixelBufferAdaptor.append(pixelBuffer, withPresentationTime: presentationTime)
+                    
+                    state.frameIndex += 1
+                }
+                
+                // Done
+                if state.frameIndex >= totalFrames && !state.hasFinished {
+                    state.hasFinished = true
+                    writerInput.markAsFinished()
+                    continuation.resume()
+                }
             }
         }
         
-        writerInput.markAsFinished()
         await writer.finishWriting()
         
         if writer.status == .failed {
