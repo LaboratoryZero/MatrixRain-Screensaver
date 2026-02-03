@@ -44,10 +44,37 @@ final class MatrixRainVideoSaverView: ScreenSaverView {
     }
 
     private func setupPlayer() {
-        guard let url = Bundle(for: MatrixRainVideoSaverView.self).url(forResource: "Loop", withExtension: "mp4") else {
-            os_log("Loop.mp4 not found", log: log, type: .error)
+        // Try multiple methods to find the video file
+        var videoURL: URL?
+        
+        // Method 1: Bundle for this class
+        if videoURL == nil {
+            videoURL = Bundle(for: MatrixRainVideoSaverView.self).url(forResource: "Loop", withExtension: "mp4")
+        }
+        
+        // Method 2: Check the user's Screen Savers folder directly
+        if videoURL == nil {
+            let userSaverPath = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library/Screen Savers/MatrixRain.saver/Contents/Resources/Loop.mp4")
+            if FileManager.default.fileExists(atPath: userSaverPath.path) {
+                videoURL = userSaverPath
+            }
+        }
+        
+        // Method 3: Check system Screen Savers folder
+        if videoURL == nil {
+            let systemSaverPath = URL(fileURLWithPath: "/Library/Screen Savers/MatrixRain.saver/Contents/Resources/Loop.mp4")
+            if FileManager.default.fileExists(atPath: systemSaverPath.path) {
+                videoURL = systemSaverPath
+            }
+        }
+        
+        guard let url = videoURL else {
+            os_log("Loop.mp4 not found in any location", log: log, type: .error)
             return
         }
+        
+        os_log("Found video at: %{public}@", log: log, type: .info, url.path)
 
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)

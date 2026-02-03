@@ -223,6 +223,25 @@ struct ExportSheet: View {
             } else {
                 exportManager.statusMessage = "✓ Installed to Screen Savers"
             }
+            
+            // Also update system saver if it exists (from pkg install)
+            let systemSaverPath = URL(fileURLWithPath: "/Library/Screen Savers/MatrixRain.saver")
+            if fileManager.fileExists(atPath: systemSaverPath.path) {
+                let systemResourcesDir = systemSaverPath.appendingPathComponent("Contents/Resources")
+                let systemVideoURL = systemResourcesDir.appendingPathComponent("Loop.mp4")
+                do {
+                    // Create Resources dir if needed (pkg install may not have created it)
+                    if !fileManager.fileExists(atPath: systemResourcesDir.path) {
+                        try fileManager.createDirectory(at: systemResourcesDir, withIntermediateDirectories: true)
+                    }
+                    try? fileManager.removeItem(at: systemVideoURL)
+                    try fileManager.copyItem(at: videoURL, to: systemVideoURL)
+                    exportManager.statusMessage = "✓ Installed to Screen Savers (user & system)"
+                } catch {
+                    // System location may require admin privileges - that's okay, user location works
+                    exportManager.statusMessage = "✓ Installed (system location needs admin)"
+                }
+            }
         } catch {
             exportManager.errorMessage = "Install failed: \(error.localizedDescription)"
         }
