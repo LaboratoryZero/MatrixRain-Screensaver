@@ -30,7 +30,7 @@ A macOS screensaver that displays the iconic Matrix-style falling code rain anim
 
 ### From Release
 
-1. Download `MatrixRain-2.0.0.dmg` from the [Releases](https://github.com/LaboratoryZero/Matrix-y/releases) page
+1. Download `MatrixRain-2.1.0.dmg` from the [Releases](https://github.com/LaboratoryZero/Matrix-y/releases) page
 2. Open the DMG and drag both items to your Applications folder (optional)
 3. Launch **MatrixRain**
 4. Customize your colors and settings
@@ -124,7 +124,7 @@ One-click theme presets using the beautiful [Catppuccin](https://github.com/catp
 
 ### Video plays with wrong colors
 
-This was fixed in v2.0.0. Make sure you're using the latest version. If upgrading, re-export your video.
+This was fixed in v2.1.0. Make sure you're using the latest version. If upgrading, re-export your video.
 
 ### Export takes a long time
 
@@ -166,6 +166,12 @@ Matrix-y/
 - **Settings**: Plist file in `~/Library/Application Support/MatrixRain/`
 
 ## Version History
+
+### v2.1.0 (2026-02-03)
+- Renamed app bundle to **MatrixRain.app**
+- H.264 export with improved frame pacing and progress reporting
+- Corrected app icon orientation
+- Updated export size estimates and app quit behavior
 
 ### v2.0.0 (2025-02-02)
 - Complete rewrite with video-based screensaver architecture
