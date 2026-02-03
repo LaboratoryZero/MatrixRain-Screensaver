@@ -8,6 +8,7 @@
 /* Begin PBXBuildFile section */
 		/* MatrixRainApp */
 		B10000000000000100000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000007 /* Assets.xcassets */; };
+		B10000000000000100000008 /* MatrixRainVideoSaver.saver in Copy Saver */ = {isa = PBXBuildFile; fileRef = D1000000000000300000000 /* MatrixRainVideoSaver.saver */; };
 		B10000000000000100000000 /* MatrixRainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000000 /* MatrixRainApp.swift */; };
 		B10000000000000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000001 /* ContentView.swift */; };
 		B10000000000000100000002 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000100000002 /* SettingsView.swift */; };
@@ -71,6 +72,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B1000000000000900000002 /* Copy Saver */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				B10000000000000100000008 /* MatrixRainVideoSaver.saver in Copy Saver */,
+			);
+			name = "Copy Saver";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXGroup section */
 		A1000000000000500000000 = {
@@ -143,10 +158,12 @@
 				B1000000000000800000000 /* Sources */,
 				B1000000000000400000000 /* Frameworks */,
 				B1000000000000900000001 /* Resources */,
+				B1000000000000900000002 /* Copy Saver */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B1000000000000B00000000 /* PBXTargetDependency */,
 			);
 			name = MatrixRainApp;
 			productName = MatrixRain;
@@ -170,6 +187,24 @@
 			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		B1000000000000C00000000 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1000000000000900000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1000000000000600000000;
+			remoteInfo = MatrixRainVideoSaver;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		B1000000000000B00000000 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1000000000000600000000 /* MatrixRainVideoSaver */;
+			targetProxy = B1000000000000C00000000 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		A1000000000000900000000 /* Project object */ = {

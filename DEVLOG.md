@@ -6,6 +6,20 @@ A chronological record of the development process for the MatrixRain macOS scree
 
 ---
 
+### February 3, 2026
+
+#### Screensaver Installation Fix (v2.1.1)
+- Diagnosed why screensaver wasn't working when installed from .pkg on clean systems
+- Root cause: The app was searching for `MatrixRainVideoSaver.saver` in DerivedData, which doesn't exist on installed systems
+- Solution: Embed the `.saver` bundle inside the `.app` Resources folder
+- Added PBXCopyFilesBuildPhase to Xcode project to copy saver into app
+- Added PBXTargetDependency so saver is built before app
+- Updated `installSaver()` to first check for embedded saver via `Bundle.main.url(forResource:)`
+- Simplified saver discovery logic (removed on-the-fly building fallback)
+- Verified pkgbuild now includes embedded saver component
+
+---
+
 ### February 1, 2026
 
 #### Initial Project Setup

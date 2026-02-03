@@ -148,16 +148,26 @@ struct ExportSheet: View {
         let saverBundlePath = screenSaversDir.appendingPathComponent("MatrixRain.saver")
         
         do {
+            // Ensure Screen Savers directory exists
+            if !fileManager.fileExists(atPath: screenSaversDir.path) {
+                try fileManager.createDirectory(at: screenSaversDir, withIntermediateDirectories: true)
+            }
+            
             // Remove existing saver if present
             if fileManager.fileExists(atPath: saverBundlePath.path) {
                 try fileManager.removeItem(at: saverBundlePath)
             }
 
-            // Find the built video saver from Xcode's DerivedData
+            // Find the built video saver - check multiple locations
             var sourceSaverURL: URL?
 
-            // Option 1: Look in the same Products directory as the app
-            if let appBundlePath = Bundle.main.bundlePath as String? {
+            // Option 1: Look for embedded saver in app's Resources (distributed builds)
+            if let embeddedSaver = Bundle.main.url(forResource: "MatrixRainVideoSaver", withExtension: "saver") {
+                sourceSaverURL = embeddedSaver
+            }
+
+            // Option 2: Look in the same Products directory as the app (Xcode builds)
+            if sourceSaverURL == nil, let appBundlePath = Bundle.main.bundlePath as String? {
                 let productsDir = URL(fileURLWithPath: appBundlePath).deletingLastPathComponent()
                 let potentialSaver = productsDir.appendingPathComponent("MatrixRainVideoSaver.saver")
                 if fileManager.fileExists(atPath: potentialSaver.path) {
@@ -165,93 +175,50 @@ struct ExportSheet: View {
                 }
             }
 
-            // Option 2: Search DerivedData for the saver
+            // Option 3: Search DerivedData for the saver (fallback for dev builds)
             if sourceSaverURL == nil {
                 let derivedDataPath = fileManager.homeDirectoryForCurrentUser
                     .appendingPathComponent("Library/Developer/Xcode/DerivedData")
                 if let contents = try? fileManager.contentsOfDirectory(at: derivedDataPath, includingPropertiesForKeys: nil) {
                     for folder in contents where folder.lastPathComponent.hasPrefix("MatrixRain-") {
-                        let potentialSaver = folder.appendingPathComponent("Build/Products/Debug/MatrixRainVideoSaver.saver")
-                        if fileManager.fileExists(atPath: potentialSaver.path) {
-                            sourceSaverURL = potentialSaver
-                            break
-                        }
                         let releaseSaver = folder.appendingPathComponent("Build/Products/Release/MatrixRainVideoSaver.saver")
                         if fileManager.fileExists(atPath: releaseSaver.path) {
                             sourceSaverURL = releaseSaver
                             break
                         }
-                    }
-                }
-            }
-
-            // Option 3: Build the saver on-the-fly if not found
-            if sourceSaverURL == nil {
-                exportManager.statusMessage = "Building saver bundle..."
-                let contentsDir = saverBundlePath.appendingPathComponent("Contents")
-                let macOSDir = contentsDir.appendingPathComponent("MacOS")
-                let resourcesDir = contentsDir.appendingPathComponent("Resources")
-                try fileManager.createDirectory(at: macOSDir, withIntermediateDirectories: true)
-                try fileManager.createDirectory(at: resourcesDir, withIntermediateDirectories: true)
-                // Copy the video
-                let destVideoURL = resourcesDir.appendingPathComponent("Loop.mp4")
-                try? fileManager.removeItem(at: destVideoURL)
-                try fileManager.copyItem(at: videoURL, to: destVideoURL)
-                // Create Info.plist
-                let infoPlist: [String: Any] = [
-                    "CFBundleIdentifier": "com.matrixy.videosaver",
-                    "CFBundleName": "MatrixRain",
-                    "CFBundleDisplayName": "Matrix Rain",
-                    "CFBundleVersion": "1.0",
-                    "CFBundleShortVersionString": "1.0",
-                    "CFBundlePackageType": "BNDL",
-                    "CFBundleExecutable": "MatrixRainVideoSaver",
-                    "NSPrincipalClass": "MatrixRainVideoSaverView",
-                    "CFBundleInfoDictionaryVersion": "6.0",
-                    "LSMinimumSystemVersion": "11.0"
-                ]
-                let plistData = try PropertyListSerialization.data(fromPropertyList: infoPlist, format: .xml, options: 0)
-                try plistData.write(to: contentsDir.appendingPathComponent("Info.plist"))
-                // Try to find and copy the compiled binary
-                let derivedDataPath = fileManager.homeDirectoryForCurrentUser
-                    .appendingPathComponent("Library/Developer/Xcode/DerivedData")
-                let enumerator = fileManager.enumerator(at: derivedDataPath, includingPropertiesForKeys: nil)
-                while let fileURL = enumerator?.nextObject() as? URL {
-                    if fileURL.lastPathComponent == "MatrixRainVideoSaver.saver" && 
-                       fileURL.path.contains("Build/Products") {
-                        let binaryURL = fileURL.appendingPathComponent("Contents/MacOS/MatrixRainVideoSaver")
-                        if fileManager.fileExists(atPath: binaryURL.path) {
-                            try fileManager.copyItem(at: binaryURL, to: macOSDir.appendingPathComponent("MatrixRainVideoSaver"))
+                        let debugSaver = folder.appendingPathComponent("Build/Products/Debug/MatrixRainVideoSaver.saver")
+                        if fileManager.fileExists(atPath: debugSaver.path) {
+                            sourceSaverURL = debugSaver
                             break
                         }
                     }
                 }
-                // Double-check video presence
-                if !fileManager.fileExists(atPath: destVideoURL.path) {
-                    exportManager.statusMessage = "Warning: Loop.mp4 missing from .saver!"
-                } else if let attrs = try? fileManager.attributesOfItem(atPath: destVideoURL.path), let size = attrs[.size] as? NSNumber, size.intValue == 0 {
-                    exportManager.statusMessage = "Warning: Loop.mp4 is zero bytes!"
-                } else {
-                    exportManager.statusMessage = "✓ Installed to Screen Savers"
-                }
+            }
+
+            guard let sourceSaverURL else {
+                exportManager.errorMessage = "Saver bundle not found. Please rebuild the project in Xcode."
                 return
             }
 
-            // Copy the pre-built saver bundle
-            try fileManager.copyItem(at: sourceSaverURL!, to: saverBundlePath)
+            // Copy the saver bundle
+            try fileManager.copyItem(at: sourceSaverURL, to: saverBundlePath)
 
-            // Always overwrite the video in the bundle
+            // Ensure Resources directory exists in the copied saver
             let resourcesDir = saverBundlePath.appendingPathComponent("Contents/Resources")
             if !fileManager.fileExists(atPath: resourcesDir.path) {
                 try fileManager.createDirectory(at: resourcesDir, withIntermediateDirectories: true)
             }
+            
+            // Copy the exported video into the saver bundle
             let destVideoURL = resourcesDir.appendingPathComponent("Loop.mp4")
             try? fileManager.removeItem(at: destVideoURL)
             try fileManager.copyItem(at: videoURL, to: destVideoURL)
-            // Double-check video presence
+            
+            // Verify installation
             if !fileManager.fileExists(atPath: destVideoURL.path) {
                 exportManager.statusMessage = "Warning: Loop.mp4 missing from .saver!"
-            } else if let attrs = try? fileManager.attributesOfItem(atPath: destVideoURL.path), let size = attrs[.size] as? NSNumber, size.intValue == 0 {
+            } else if let attrs = try? fileManager.attributesOfItem(atPath: destVideoURL.path), 
+                      let size = attrs[.size] as? NSNumber, size.intValue == 0 {
                 exportManager.statusMessage = "Warning: Loop.mp4 is zero bytes!"
             } else {
                 exportManager.statusMessage = "✓ Installed to Screen Savers"
